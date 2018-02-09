@@ -3,6 +3,7 @@
 #include <memory.h>
 #include <windows.h>
 #include <direct.h>
+#include "..\..\version_info.h"
 
 //----------------------------------------------------------------------------------------------------------------------------------------
 // Defines, Pre-declarations & typedefs
@@ -771,6 +772,11 @@ bool deserialize(const MemoryBuffer & iBuffer, LNK_ITEMID & oValue, std::string 
 //----------------------------------------------------------------------------------------------------------------------------------------
 // lnkLib functions & API
 //----------------------------------------------------------------------------------------------------------------------------------------
+const char * getVersion()
+{
+  return PRODUCT_VERSION;
+}
+
 bool isLink(const MemoryBuffer & iFileContent)
 {
   return isLink(iFileContent.getBuffer(), iFileContent.getSize());
