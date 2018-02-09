@@ -14,5 +14,3 @@ mkdir build >NUL 2>NUL
 cd build
 
 cmake -G "Visual Studio 10 2010" %SRC_DIR%
-
-pause
