@@ -1,0 +1,98 @@
+# Notes:
+#   - Minimal appveyor.yml file is an empty file. All sections are optional.
+#   - Indent each level of configuration with 2 spaces. Do not use tabs!
+#   - All section names are case-sensitive.
+#   - Section names should be unique on each level.
+
+#---------------------------------#
+#      general configuration      #
+#---------------------------------#
+
+# version format
+# version must contains build number to make sure that all commits are processed by appveyor.
+# If build number is not part of the version than appveyor build fails with the following message: "Build version x.y.z already exists."
+version: 0.1.0.{build}
+
+# branches to build
+branches:
+  only:
+    - master
+
+# Do not build on tags (GitHub and BitBucket)
+skip_tags: true
+
+#---------------------------------#
+#    environment configuration    #
+#---------------------------------#
+
+# Build worker image (VM template)
+image: Visual Studio 2015
+
+# scripts that are called at very beginning, before repo cloning
+init:
+  - git config --global core.autocrlf true
+  - ps: $env:GIT_HASH=$env:APPVEYOR_REPO_COMMIT.Substring(0, 10)
+
+# clone directory
+clone_folder: c:\projects\libLNK
+
+# scripts that run after cloning repository
+install:
+- ps: .\ci\appveyor\build_version_split.ps1
+- ps: .\ci\appveyor\prepare_github_deploy.ps1
+#- cmd: call c:\projects\libLNK\ci\appveyor\version_info_update.bat
+- cmd: call c:\projects\libLNK\ci\appveyor\googletest_install.bat
+- cmd: call c:\projects\libLNK\ci\appveyor\googletest_build.bat
+- cmd: call c:\projects\libLNK\ci\appveyor\list_env_var.bat
+
+#---------------------------------#
+#       build configuration       #
+#---------------------------------#
+
+# build platform, i.e. x86, x64, Any CPU. This setting is optional.
+#platform: x86
+
+# build Configuration, i.e. Debug, Release, etc.
+configuration: Release
+
+# to add several configurations to build matrix:
+#configuration:
+#  - Debug
+#  - Release
+
+build:
+  project: msvc\libLNK.sln
+  verbosity: minimal
+  
+#---------------------------------#
+#       tests configuration       #
+#---------------------------------#
+
+# to run your custom scripts instead of automatic tests
+test_script:
+- cmd: call c:\projects\libLNK\ci\appveyor\test_script.bat
+
+#---------------------------------#
+#      artifacts configuration    #
+#---------------------------------#
+
+artifacts:
+- path: cmake\build\bin\Release\libLNKTest.x86.release.xml
+  name: libLNKTest.x86.release.xml
+  
+#---------------------------------#
+#     deployment configuration    #
+#---------------------------------#
+
+#prepare deplying to github. See prepare_github_deploy.ps1 for more details.
+deploy:
+- provider: GitHub
+  tag: $(GITHUB_TAG_NAME)
+  release: $(GITHUB_RELEASE_NAME)
+  description: Latest successful AppVeyor CI builds of branch '$(APPVEYOR_REPO_BRANCH)', commit $(APPVEYOR_REPO_COMMIT)
+  auth_token:
+    secure: BgyLisMc154qWpkyBdh8OD+D9HMM+YnBkh7H4MEUShKO3aCU+Fn/XVGJ07fTsRmH
+  artifact: /(.*\.zip|.*\.exe)/
+  draft: false           #true means release is private (visible to contributors only), false is public (visible to everyone)
+  prerelease: true       #true for prerelease, false to identify this release as the 'latest release'
+  force_update: true
