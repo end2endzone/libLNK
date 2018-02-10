@@ -1,5 +1,6 @@
 Changes for 0.1.0:
 
-* New Feature: Implemented issue #1 - Move code to liblnk namespace
-* New Feature: Implemented issue #3 - Create a version API for the library
+* New Feature: Implemented issue #1 - Move code to liblnk namespace.
+* New Feature: Implemented issue #2 - Replace standalone functions by filesystemfunc.cpp code of other projects.
+* New Feature: Implemented issue #3 - Create a version API for the library.
 * First public release.
