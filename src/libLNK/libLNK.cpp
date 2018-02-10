@@ -5,6 +5,9 @@
 #include <direct.h>
 #include "..\..\version_info.h"
 
+namespace lnk
+{
+
 //----------------------------------------------------------------------------------------------------------------------------------------
 // Defines, Pre-declarations & typedefs
 //----------------------------------------------------------------------------------------------------------------------------------------
@@ -765,7 +768,6 @@ bool deserialize(const MemoryBuffer & iBuffer, LNK_ITEMID & oValue, std::string 
   assert( success == true );
   return success;
 }
-
 
 
 
@@ -1577,3 +1579,5 @@ std::string getLinkCommand(const char * iFilePath)
 
   return value;
 }
+
+}; //lnk

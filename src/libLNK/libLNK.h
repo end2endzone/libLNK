@@ -3,6 +3,9 @@
 #include <string>
 #include <vector>
 
+namespace lnk
+{
+
 enum LNK_HOTKEY_CODES
 {
   LNK_HK_NONE = 0x00,
@@ -94,3 +97,5 @@ bool getLinkInfo(const char * iFilePath, LinkInfo & oLinkInfo);
 bool createLink(const char * iFilePath, const LinkInfo & iLinkInfo);
 bool printLinkInfo(const char * iFilePath);
 std::string getLinkCommand(const char * iFilePath);
+
+}; //lnk

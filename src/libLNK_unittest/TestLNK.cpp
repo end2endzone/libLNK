@@ -8,7 +8,10 @@
 #endif
 #include <Windows.h>
 
-extern std::string getLocalFolder();
+namespace lnk
+{
+  extern std::string getLocalFolder();
+}; //lnk
 
 gTestHelper & hlp = gTestHelper::getInstance();
 
@@ -118,14 +121,14 @@ void TestLNK::TearDown()
 TEST_F(TestLNK, testCreateSimpleLink)
 {
   //test creation identical
-  LinkInfo info;
+  lnk::LinkInfo info;
   info.target = "C:\\Program Files (x86)\\PDFCreator\\History.txt";
   info.arguments = "\"this is the arguments\"";
   info.description = "this is my comment";
   info.workingDirectory = "C:\\Program Files (x86)\\PDFCreator";
   info.customIcon.filename = "%SystemRoot%\\system32\\SHELL32.dll";
   info.customIcon.index = 5;
-  info.hotKey = LNK_NO_HOTKEY;
+  info.hotKey = lnk::LNK_NO_HOTKEY;
 
   const char * linkFilename = ".\\tests\\Simple.txt.copy.lnk";
   bool success = createLink(linkFilename, info);
@@ -138,7 +141,7 @@ TEST_F(TestLNK, testCreateSimpleLink)
   ASSERT_TRUE( findAndCloseWindow("History.txt - Notepad") );
 
   //test command
-  std::string command = getLinkCommand(linkFilename);
+  std::string command = lnk::getLinkCommand(linkFilename);
   std::string expectedCommand = info.target;
   expectedCommand += " ";
   expectedCommand += info.arguments;
@@ -146,9 +149,9 @@ TEST_F(TestLNK, testCreateSimpleLink)
 
   //test getLinkInfo on a custom (handmade) link
   {
-    LinkInfo info;
+    lnk::LinkInfo info;
     bool success = false;
-    success = getLinkInfo(linkFilename, info);
+    success = lnk::getLinkInfo(linkFilename, info);
     ASSERT_TRUE( success == true );
     LinkInfoDebug d = {
       info.target.c_str(),
@@ -171,22 +174,22 @@ TEST_F(TestLNK, testCreateSimpleLink)
 TEST_F(TestLNK, testCreateCustomLink)
 {
   //test creation
-  LinkInfo info;
+  lnk::LinkInfo info;
   info.target = "C:\\WINDOWS\\system32\\cmd.exe";
   info.arguments = "/c pause|echo this is a pause. please press a key";
   info.description = "testCreateCustomLink()";
-  info.workingDirectory = getLocalFolder();
+  info.workingDirectory = lnk::getLocalFolder();
   info.workingDirectory += "\\tests";
   info.customIcon.filename = "C:\\Program Files (x86)\\PDFCreator\\PDFCreator.exe";
   info.customIcon.index = 0;
-  info.hotKey = LNK_NO_HOTKEY;
+  info.hotKey = lnk::LNK_NO_HOTKEY;
 
   const char * linkFilename = "./tests/testcreate.copy.lnk";
-  bool success = createLink(linkFilename, info);
+  bool success = lnk::createLink(linkFilename, info);
   ASSERT_TRUE( success == true );
 
   //test command
-  std::string command = getLinkCommand(linkFilename);
+  std::string command = lnk::getLinkCommand(linkFilename);
   std::string expectedCommand = info.target;
   expectedCommand += " ";
   expectedCommand += info.arguments;
@@ -194,9 +197,9 @@ TEST_F(TestLNK, testCreateCustomLink)
 
   //test getLinkInfo on a custom (handmade) link
   {
-    LinkInfo info;
+    lnk::LinkInfo info;
     bool success = false;
-    success = getLinkInfo(linkFilename, info);
+    success = lnk::getLinkInfo(linkFilename, info);
     ASSERT_TRUE( success == true );
     LinkInfoDebug d = {
       info.target.c_str(),
@@ -219,9 +222,9 @@ TEST_F(TestLNK, testCreateCustomLink)
 TEST_F(TestLNK, testLinkInfo)
 {
   {
-    LinkInfo info;
+    lnk::LinkInfo info;
     bool success = false;
-    success = getLinkInfo("./tests/Simple.txt.lnk", info);
+    success = lnk::getLinkInfo("./tests/Simple.txt.lnk", info);
     ASSERT_TRUE( success == true );
     LinkInfoDebug d = {
       info.target.c_str(),
@@ -241,9 +244,9 @@ TEST_F(TestLNK, testLinkInfo)
   }
 
   {
-    LinkInfo info;
+    lnk::LinkInfo info;
     bool success = false;
-    success = getLinkInfo("./tests/system.ini.lnk", info);
+    success = lnk::getLinkInfo("./tests/system.ini.lnk", info);
     ASSERT_TRUE( success == true );
     LinkInfoDebug d = {
       info.target.c_str(),
@@ -263,9 +266,9 @@ TEST_F(TestLNK, testLinkInfo)
   }
 
   {
-    LinkInfo info;
+    lnk::LinkInfo info;
     bool success = false;
-    success = getLinkInfo("./tests/usbdrive.txt.lnk", info);
+    success = lnk::getLinkInfo("./tests/usbdrive.txt.lnk", info);
     ASSERT_TRUE( success == true );
     LinkInfoDebug d = {
       info.target.c_str(),
