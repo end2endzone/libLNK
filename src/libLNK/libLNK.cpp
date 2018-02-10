@@ -238,28 +238,6 @@ extern const LNK_ITEMID LNK_ITEMIDFileDefault;
 //----------------------------------------------------------------------------------------------------------------------------------------
 // global classes & functions
 //----------------------------------------------------------------------------------------------------------------------------------------
-void splitPath(const char * iPath, StringList & parts)
-{
-  std::string s = iPath;
-  std::string accumulator;
-  for(unsigned int i = 0; i<s.size(); i++)
-  {
-    const char & c = s[i];
-    if (c == '\\' && accumulator.size() > 0)
-    {
-      parts.push_back(accumulator);
-      accumulator = "";
-    }
-    else
-      accumulator += c;
-  }
-  if (accumulator.size() > 0)
-  {
-    parts.push_back(accumulator);
-    accumulator = "";
-  }
-}
-
 std::string getShortPath(const char * iFilePath)
 {
   std::string shortPath;
@@ -866,19 +844,29 @@ MemoryBuffer createShellItemIdList(const char * iFilePath, const LinkInfo & iLin
   
   //split path
   StringList shortPathParts;
-  splitPath(shortPathStr, shortPathParts);
+  filesystem::splitPath(shortPathStr, shortPathParts);
   if (shortPathParts.size() <= 2)
     return shellIdList; //short path needs at least a drive/folder/filename structure
   StringList longPathParts;
-  splitPath(iLinkInfo.target.c_str(), longPathParts);
+  filesystem::splitPath(iLinkInfo.target.c_str(), longPathParts);
   if (longPathParts.size() <= 2)
     return shellIdList; //short path needs at least a drive/folder/filename structure
   if (shortPathParts.size() != longPathParts.size())
     return shellIdList; //both long and short paths needs to be the same size
 
+  //shortPathParts[0]	C:
+  //shortPathParts[1]	PROGRA~1
+  //shortPathParts[2]	7-Zip
+  //shortPathParts[3]	History.txt
+
+  //longPathParts[0]	C:
+  //longPathParts[1]	Program Files
+  //longPathParts[2]	7-Zip
+  //longPathParts[3]	History.txt
+
   //setup drive data
-  std::string & drive = shortPathParts[0];
-  const char & driveLetter = drive[0];
+  std::string & drive = shortPathParts[0]; // C:
+  const char & driveLetter = drive[0];     // C
   itemIdDriveData[3] = toupper(driveLetter);
 
   //create data holder for folder & filename ItemId
