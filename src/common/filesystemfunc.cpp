@@ -126,10 +126,35 @@ namespace filesystem
     }
   }
 
+  void splitPath(const std::string & iPath, std::vector<std::string> & oElements)
+  {
+    oElements.clear();
+    std::string s = iPath;
+    std::string accumulator;
+    for(unsigned int i = 0; i<s.size(); i++)
+    {
+      const char & c = s[i];
+      if (c == getPathSeparator() && accumulator.size() > 0)
+      {
+        oElements.push_back(accumulator);
+        accumulator = "";
+      }
+      else
+        accumulator += c;
+    }
+    if (accumulator.size() > 0)
+    {
+      oElements.push_back(accumulator);
+      accumulator = "";
+    }
+  }
+
   char getPathSeparator()
   {
 #ifdef _WIN32
     return '\\';
+#else
+    return '/';
 #endif
   }
 
