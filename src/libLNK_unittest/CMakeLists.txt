@@ -1,3 +1,4 @@
+include_directories(${CMAKE_SOURCE_DIR}/common)
 include_directories(${CMAKE_SOURCE_DIR}/libLNK)
 
 link_directories(${LIBRARY_OUTPUT_PATH})
@@ -21,5 +22,5 @@ if (WIN32)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif()
 
-target_link_libraries(libLNK_unittest debug     libLNK.lib gtest.lib)
-target_link_libraries(libLNK_unittest optimized libLNK.lib gtest.lib)
+target_link_libraries(libLNK_unittest debug     libLNK.lib common.lib gtest.lib)
+target_link_libraries(libLNK_unittest optimized libLNK.lib common.lib gtest.lib)

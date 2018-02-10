@@ -2,16 +2,12 @@
 #include "gtesthelper.h"
 
 #include "libLNK.h"
+#include "filesystemfunc.h"
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
 #endif
 #include <Windows.h>
-
-namespace lnk
-{
-  extern std::string getLocalFolder();
-}; //lnk
 
 gTestHelper & hlp = gTestHelper::getInstance();
 
@@ -178,7 +174,7 @@ TEST_F(TestLNK, testCreateCustomLink)
   info.target = "C:\\WINDOWS\\system32\\cmd.exe";
   info.arguments = "/c pause|echo this is a pause. please press a key";
   info.description = "testCreateCustomLink()";
-  info.workingDirectory = lnk::getLocalFolder();
+  info.workingDirectory = filesystem::getCurrentFolder();
   info.workingDirectory += "\\tests";
   info.customIcon.filename = "C:\\Program Files (x86)\\PDFCreator\\PDFCreator.exe";
   info.customIcon.index = 0;

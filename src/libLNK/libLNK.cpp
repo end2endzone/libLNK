@@ -5,6 +5,8 @@
 #include <direct.h>
 #include "..\..\version_info.h"
 
+#include "filesystemfunc.h"
+
 namespace lnk
 {
 
@@ -12,7 +14,6 @@ namespace lnk
 // Defines, Pre-declarations & typedefs
 //----------------------------------------------------------------------------------------------------------------------------------------
 #define MINIMUM(a, b)  (((a) < (b)) ? (a) : (b))
-unsigned long getFileSize(const char * iFilePath);
 typedef std::vector<std::string> StringList;
 
 //----------------------------------------------------------------------------------------------------------------------------------------
@@ -317,7 +318,7 @@ public:
   bool loadFile(const char * iFilePath)
   {
     //get size of file
-    unsigned long size = getFileSize(iFilePath);
+    unsigned long size = filesystem::getFileSize(iFilePath);
 
     FILE * f = fopen(iFilePath, "rb");
     if (f)
@@ -338,49 +339,6 @@ private:
   unsigned char* mBuffer;
   unsigned long mSize;
 };
-
-std::string getLocalFolder()
-{
-  std::string folder;
-  char buffer[_MAX_PATH];
-  getcwd(buffer, _MAX_PATH);
-  folder = buffer;
-  return folder;
-}
-
-bool isFile(const char * iFilePath)
-{
-  FILE * f = fopen(iFilePath, "rb");
-  if (f)
-  {
-    fclose(f);
-    return true;
-  }
-  return false;
-}
-
-bool isFolder(const char * iFilePath)
-{
-  std::string localFolder = getLocalFolder();
-  bool success = (_chdir(iFilePath) == 0);
-  if (success)
-    _chdir(localFolder.c_str());
-  return success;
-}
-
-unsigned long getFileSize(const char * iFilePath)
-{
-  unsigned long size = 0;
-  FILE * f = fopen(iFilePath, "rb");
-  if (f)
-  {
-    //get size of file
-    fseek(f, 0, SEEK_END);
-    size = ftell(f);
-    fclose(f);
-  }
-  return size;
-}
 
 void splitPath(const char * iPath, StringList & parts)
 {
@@ -598,6 +556,7 @@ inline bool serialize(const T & iValue, MemoryBuffer & ioBuffer)
   }
   return false;
 }
+
 template <>
 inline bool serialize(const LNK_ITEMID & iValue, MemoryBuffer & ioBuffer)
 {
@@ -1097,8 +1056,8 @@ bool createLink(const char * iFilePath, const LinkInfo & iLinkInfo)
   memcpy(header.guid, LNK_GUID_DEFAULT, LNK_GUID_SIZE);
   
   //detect target
-  bool isTargetFolder = isFolder(iLinkInfo.target.c_str());
-  bool isTargetFile = isFile(iLinkInfo.target.c_str());
+  bool isTargetFolder = filesystem::folderExists(iLinkInfo.target.c_str());
+  bool isTargetFile = filesystem::fileExists(iLinkInfo.target.c_str());
 
   //building LNK_FLAGS
   {
@@ -1140,7 +1099,7 @@ bool createLink(const char * iFilePath, const LinkInfo & iLinkInfo)
   header.creationTime = 0;
   header.lastAccessTime = 0;
   header.modificationTime = 0;
-  header.targetFileLength = (isTargetFile ? getFileSize(iLinkInfo.target.c_str()) : 0);
+  header.targetFileLength = (isTargetFile ? filesystem::getFileSize(iLinkInfo.target.c_str()) : 0);
   header.customIconNumber = (iLinkInfo.customIcon.filename.size() > 0 ? iLinkInfo.customIcon.index : 0);
   header.showWindowValue = 1;
   header.hotKey = iLinkInfo.hotKey;
