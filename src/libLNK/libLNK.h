@@ -91,7 +91,7 @@ struct LinkInfo
   LNK_HOTKEY hotKey;
 };
 
-const char * getVersion();
+const char * getVersionString();
 bool isLink(const unsigned char * iBuffer, const unsigned long & iSize);
 bool getLinkInfo(const char * iFilePath, LinkInfo & oLinkInfo);
 bool createLink(const char * iFilePath, const LinkInfo & iLinkInfo);

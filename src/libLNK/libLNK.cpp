@@ -774,7 +774,7 @@ bool deserialize(const MemoryBuffer & iBuffer, LNK_ITEMID & oValue, std::string 
 //----------------------------------------------------------------------------------------------------------------------------------------
 // lnkLib functions & API
 //----------------------------------------------------------------------------------------------------------------------------------------
-const char * getVersion()
+const char * getVersionString()
 {
   return PRODUCT_VERSION;
 }
