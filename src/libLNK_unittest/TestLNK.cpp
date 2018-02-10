@@ -122,10 +122,10 @@ TEST_F(TestLNK, testCreateSimpleLink)
 {
   //test creation identical
   lnk::LinkInfo info;
-  info.target = "C:\\Program Files (x86)\\PDFCreator\\History.txt";
+  info.target = "C:\\Program Files\\7-Zip\\History.txt";
   info.arguments = "\"this is the arguments\"";
   info.description = "this is my comment";
-  info.workingDirectory = "C:\\Program Files (x86)\\PDFCreator";
+  info.workingDirectory = "C:\\Program Files\\7-Zip";
   info.customIcon.filename = "%SystemRoot%\\system32\\SHELL32.dll";
   info.customIcon.index = 5;
   info.hotKey = lnk::LNK_NO_HOTKEY;
@@ -161,11 +161,11 @@ TEST_F(TestLNK, testCreateSimpleLink)
       info.workingDirectory.c_str(),
       info.customIcon.filename.c_str(),
     };
-    ASSERT_TRUE( info.target == "C:\\Program Files (x86)\\PDFCreator\\History.txt" );
+    ASSERT_TRUE( info.target == "C:\\Program Files\\7-Zip\\History.txt" );
     ASSERT_TRUE( info.networkPath == "" );
     ASSERT_TRUE( info.arguments == "\"this is the arguments\"" );
     ASSERT_TRUE( info.description == "this is my comment" );
-    ASSERT_TRUE( info.workingDirectory == "C:\\Program Files (x86)\\PDFCreator" );
+    ASSERT_TRUE( info.workingDirectory == "C:\\Program Files\\7-Zip" );
     ASSERT_TRUE( info.customIcon.filename == "%SystemRoot%\\system32\\SHELL32.dll" );
     ASSERT_TRUE( info.customIcon.index == 5 );
   }
