@@ -7,13 +7,14 @@
 
 #include "filesystemfunc.h"
 
+#include "MemoryBuffer.h"
+
 namespace lnk
 {
 
 //----------------------------------------------------------------------------------------------------------------------------------------
 // Defines, Pre-declarations & typedefs
 //----------------------------------------------------------------------------------------------------------------------------------------
-#define MINIMUM(a, b)  (((a) < (b)) ? (a) : (b))
 typedef std::vector<std::string> StringList;
 
 //----------------------------------------------------------------------------------------------------------------------------------------
@@ -237,109 +238,6 @@ extern const LNK_ITEMID LNK_ITEMIDFileDefault;
 //----------------------------------------------------------------------------------------------------------------------------------------
 // global classes & functions
 //----------------------------------------------------------------------------------------------------------------------------------------
-class MemoryBuffer
-{
-public:
-
-  MemoryBuffer(void) : 
-  mBuffer(NULL),
-  mSize(0)
-  {
-  }
-
-  MemoryBuffer(unsigned long iSize) : 
-  mBuffer(NULL),
-  mSize(0)
-  {
-    allocate(iSize);
-  }
-
-  MemoryBuffer(const MemoryBuffer & arg) : 
-  mBuffer(NULL),
-  mSize(0)
-  {
-    if (allocate(arg.mSize))
-      memcpy(mBuffer, arg.mBuffer, mSize);
-  }
-
-  virtual ~MemoryBuffer(void) { clear(); }
-
-  //----------------
-  // public methods
-  //----------------
-
-  void clear()
-  {
-    if (mBuffer)
-    {
-      delete[] mBuffer;
-    }
-    mBuffer = NULL;
-    mSize = 0;
-  }
-
-  unsigned char * getBuffer() { return mBuffer; }
-  const unsigned char * getBuffer() const { return mBuffer; }
-
-  bool allocate(unsigned long iSize)
-  {
-    clear();
-    mBuffer = new unsigned char[iSize];
-    if (mBuffer)
-    {
-      mSize = iSize;
-      return true;
-    }
-    return false;
-  }
-
-  bool reallocate(unsigned long iSize)
-  {
-    unsigned char * newBuffer = new unsigned char[iSize];
-    if (newBuffer)
-    {
-      //if the current memory buffer has data
-      if (mBuffer)
-      {
-        //copy the content of the existing buffer to newBuffer
-        memcpy(newBuffer, mBuffer, MINIMUM(mSize, iSize));
-      }
-
-      clear();
-      mBuffer = newBuffer;
-      mSize = iSize;
-      return true;
-    }
-    return false;
-  }
-
-  unsigned long getSize() const { return mSize; }
-
-  bool loadFile(const char * iFilePath)
-  {
-    //get size of file
-    unsigned long size = filesystem::getFileSize(iFilePath);
-
-    FILE * f = fopen(iFilePath, "rb");
-    if (f)
-    {
-      if (allocate(size))
-      {
-        fread(mBuffer, 1, size, f);
-
-        fclose(f);
-        return true;
-      }
-      fclose(f);
-    }
-    return false;
-  }
-
-private:
-  unsigned char* mBuffer;
-  unsigned long mSize;
-};
-
 void splitPath(const char * iPath, StringList & parts)
 {
   std::string s = iPath;
