@@ -11,7 +11,6 @@
 
 gTestHelper & hlp = gTestHelper::getInstance();
 
-
 std::string getTestLink()
 {
   std::string file;
@@ -20,72 +19,6 @@ std::string getTestLink()
   file.append(".lnk");  
   return file;
 }
-
-std::string getExpectedFilePath()
-{
-  std::string file;
-  file.append(hlp.getTestQualifiedName());
-  file.append(".expected.txt");
-  return file;
-}
-
-std::string getActualFilePath()
-{
-  std::string file;
-  file.append(hlp.getTestQualifiedName());
-  file.append(".actual.txt");
-  return file;
-}
-
-bool createDummyFile(const char * iPath)
-{
-  FILE * f = fopen(iPath, "w");
-  if (!f)
-    return false;
-  fputs("foobar", f);
-  fclose(f);
-  return true;
-}
-
-bool createDummyFile(const std::string & iPath, int size)
-{
-  FILE * f = fopen(iPath.c_str(), "w");
-  if (!f)
-    return false;
-  static const int BUFFER_SIZE = 255;
-  char buffer[BUFFER_SIZE];
-  for(int i=0; i<BUFFER_SIZE; i++)
-  {
-    buffer[i] = (i*23+67)%(BUFFER_SIZE+1);
-  }
-  int numBlocks = size/BUFFER_SIZE;
-  for(int i=0; i<numBlocks; i++)
-  {
-    fwrite(buffer, 1, BUFFER_SIZE, f);
-  }
-  fclose(f);
-  return true;
-}
-
-bool deleteFile(const char * iPath)
-{
-  if (hlp.fileExists(iPath))
-  {
-    bool deleted = remove(iPath) == 0;
-    return deleted;
-  }
-  return true; //file does not exists. Success.
-}
-
-struct LinkInfoDebug
-{
-  const char * target;
-  const char * networkPath;
-  const char * arguments;
-  const char * description;
-  const char * workingDirectory;
-  const char * customIcon;
-};
 
 bool findAndCloseWindow(const char * iWindowTitle)
 {
