@@ -238,31 +238,6 @@ extern const LNK_ITEMID LNK_ITEMIDFileDefault;
 //----------------------------------------------------------------------------------------------------------------------------------------
 // global classes & functions
 //----------------------------------------------------------------------------------------------------------------------------------------
-std::string getShortPath(const char * iFilePath)
-{
-  std::string shortPath;
-
-  // First obtain the size needed by passing NULL and 0.
-  long length = GetShortPathName(iFilePath, NULL, 0);
-  if (length == 0)
-    return "";
-
-  // Dynamically allocate the correct size 
-  // (terminating null char was included in length)
-  char * buffer = new char[length];
-
-  // Now simply call again using same long path.
-  length = GetShortPathName(iFilePath, buffer, length);
-  if (length == 0)
-    return "";
-
-  shortPath = buffer;
-
-  delete [] buffer;
-
-  return shortPath;
-}
-
 std::string toTimeString(const unsigned __int64 & iTime)
 {
   //time stamps
@@ -837,7 +812,7 @@ MemoryBuffer createShellItemIdList(const char * iFilePath, const LinkInfo & iLin
   static const unsigned short itemIdFinalDataSize = sizeof(itemIdFinalData);
 
   //convert the long path name to short path name
-  std::string shortPath = getShortPath(iLinkInfo.target.c_str());
+  std::string shortPath = filesystem::getShortPathForm(iLinkInfo.target.c_str());
   const char * shortPathStr = shortPath.c_str();
   if (shortPath.size() == 0)
     return shellIdList; //short path not found
