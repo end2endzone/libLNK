@@ -589,6 +589,8 @@ const char * getVersionString()
   return PRODUCT_VERSION;
 }
 
+bool isLink(const unsigned char * iBuffer, const unsigned long & iSize);
+
 bool isLink(const MemoryBuffer & iFileContent)
 {
   return isLink(iFileContent.getBuffer(), iFileContent.getSize());
@@ -603,6 +605,22 @@ bool isLink(const unsigned char * iBuffer, const unsigned long & iSize)
     bool signatureSuccess = (memcmp(header->signature, LNK_SIGNATURE_DEFAULT, LNK_SIGNATURE_SIZE) == 0);
     bool guidSuccess =      (memcmp(header->guid, LNK_GUID_DEFAULT, LNK_GUID_SIZE) == 0);
     return signatureSuccess && guidSuccess;
+  }
+  return false;
+}
+
+bool isLink(const char * iFilePath)
+{
+  MemoryBuffer fileContent;
+  bool loadSuccess = fileContent.loadFile(iFilePath);
+  if (loadSuccess)
+  {
+    //validate signature
+    bool link = isLink(fileContent);
+    if (link)
+    {
+      return true;
+    }
   }
   return false;
 }

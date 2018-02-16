@@ -92,7 +92,7 @@ struct LinkInfo
 };
 
 const char * getVersionString();
-bool isLink(const unsigned char * iBuffer, const unsigned long & iSize);
+bool isLink(const char * iFilePath);
 bool getLinkInfo(const char * iFilePath, LinkInfo & oLinkInfo);
 bool createLink(const char * iFilePath, const LinkInfo & iLinkInfo);
 bool printLinkInfo(const char * iFilePath);
