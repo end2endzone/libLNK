@@ -239,3 +239,104 @@ TEST_F(TestLNK, testWinXpIcon)
   ASSERT_TRUE( info.customIcon.filename == "%SystemRoot%\\system32\\SHELL32.dll" );
   ASSERT_TRUE( info.customIcon.index == 219 );
 }
+
+TEST_F(TestLNK, testWin7CdRom)
+{
+  //Build test case link file
+  std::string lnkFilePath = getTestLink();
+
+  lnk::LinkInfo info;
+  bool success = lnk::getLinkInfo(lnkFilePath.c_str(), info);
+  ASSERT_TRUE( success == true );
+  ASSERT_TRUE( info.target == "E:\\Specials\\IMG_5187_LR5.jpg" );
+}
+
+TEST_F(TestLNK, testWin7LongFilename)
+{
+  //Build test case link file
+  std::string lnkFilePath = getTestLink();
+
+  lnk::LinkInfo info;
+  bool success = lnk::getLinkInfo(lnkFilePath.c_str(), info);
+  ASSERT_TRUE( success == true );
+  ASSERT_TRUE( info.target == "D:\\temp\\foo\\thisisalongfilename.txt" );
+}
+
+TEST_F(TestLNK, testWin7LongFolderName)
+{
+  //Build test case link file
+  std::string lnkFilePath = getTestLink();
+
+  lnk::LinkInfo info;
+  bool success = lnk::getLinkInfo(lnkFilePath.c_str(), info);
+  ASSERT_TRUE( success == true );
+  ASSERT_TRUE( info.target == "D:\\temp\\foo\\thisisalongfolder\\bar\\History.txt" );
+}
+
+TEST_F(TestLNK, testWin7MappedDrive)
+{
+  //Build test case link file
+  std::string lnkFilePath = getTestLink();
+
+  lnk::LinkInfo info;
+  bool success = lnk::getLinkInfo(lnkFilePath.c_str(), info);
+  ASSERT_TRUE( success == true );
+  ASSERT_TRUE( info.target == "Z:\\STANDARD\\9000\\E\\9001E.PDF" );
+}
+
+TEST_F(TestLNK, testWin7MultipleFolders)
+{
+  //Build test case link file
+  std::string lnkFilePath = getTestLink();
+
+  lnk::LinkInfo info;
+  bool success = lnk::getLinkInfo(lnkFilePath.c_str(), info);
+  ASSERT_TRUE( success == true );
+  ASSERT_TRUE( info.target == "D:\\temp\\foo\\777\\bar\\History.txt" );
+}
+
+TEST_F(TestLNK, testWin7NetworkPath)
+{
+  //Build test case link file
+  std::string lnkFilePath = getTestLink();
+
+  lnk::LinkInfo info;
+  bool success = lnk::getLinkInfo(lnkFilePath.c_str(), info);
+  ASSERT_TRUE( success == true );
+  ASSERT_TRUE( info.target == "HOME.PDF" );
+  ASSERT_TRUE( info.networkPath == "\\\\FILSRV01\\ISO\\HOME.PDF" );
+  ASSERT_TRUE( info.workingDirectory == "\\\\filsrv01\\ISO" );
+}
+
+TEST_F(TestLNK, testWin7UsbDrive2)
+{
+  //Build test case link file
+  std::string lnkFilePath = getTestLink();
+
+  lnk::LinkInfo info;
+  bool success = lnk::getLinkInfo(lnkFilePath.c_str(), info);
+  ASSERT_TRUE( success == true );
+  ASSERT_TRUE( info.target == "G:\\foo\\bar\\History.txt" );
+}
+
+TEST_F(TestLNK, testWin7UsbDriveReadOnly)
+{
+  //Build test case link file
+  std::string lnkFilePath = getTestLink();
+
+  lnk::LinkInfo info;
+  bool success = lnk::getLinkInfo(lnkFilePath.c_str(), info);
+  ASSERT_TRUE( success == true );
+  ASSERT_TRUE( info.target == "Z:\\TUG\\Scope.txt" );
+}
+
+TEST_F(TestLNK, testWin7UsbDriveRemovableMedium)
+{
+  //Build test case link file
+  std::string lnkFilePath = getTestLink();
+
+  lnk::LinkInfo info;
+  bool success = lnk::getLinkInfo(lnkFilePath.c_str(), info);
+  ASSERT_TRUE( success == true );
+  ASSERT_TRUE( info.target == "Z:\\TUG\\Scope.txt" );
+}

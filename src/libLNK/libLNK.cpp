@@ -523,40 +523,23 @@ bool deserialize(const MemoryBuffer & iBuffer, LNK_ITEMID & oValue, std::string 
     }
   }
 
-  //synchronisation is required here.
-  //you can read 0x00 0x?? unknown9 OR 
-  //you can read 0x?? unknown9
-
-  oValue.unknown07 = readData<unsigned char>(buffer, offset);
-  if (oValue.unknown07 == 0x00)
-    oValue.unknown08 = readData<unsigned char>(buffer, offset);
-  else
+  //search for location of nameUnicode
+  //nameUnicode is located at the end of the ItemID
+  //following a NULL unicode character.
+  const unsigned short * nameUnicodeAddress = (const unsigned short *)(&buffer[iBuffer.getSize()-2]); //last uint16_t of the ItemID
+  nameUnicodeAddress--; //NULL terminating character;
+  nameUnicodeAddress--; //last string character;
+  while(*nameUnicodeAddress != 0x0000)
   {
-    oValue.unknown08 = oValue.unknown07;
-    oValue.unknown07 = 0x00;
+    nameUnicodeAddress--; //rewind until the beginning of the 
   }
-
-  //synchronization completed at this point
-
-  oValue.unknown09[0] = readData<unsigned char>(buffer, offset);
-  oValue.unknown09[1] = readData<unsigned char>(buffer, offset);
-  oValue.unknown09[2] = readData<unsigned char>(buffer, offset);
-  oValue.unknown09[3] = readData<unsigned char>(buffer, offset);
-  oValue.unknown09[4] = readData<unsigned char>(buffer, offset);
-  oValue.unknown09[5] = readData<unsigned char>(buffer, offset);
-  oValue.unknown09[6] = readData<unsigned char>(buffer, offset);
-  oValue.unknown10 = readData<unsigned char>(buffer, offset);
-  oValue.unknown11 = readData<unsigned char>(buffer, offset);
-  oValue.unknown12 = readData<unsigned char>(buffer, offset);
-  oValue.unknown13 = readData<unsigned char>(buffer, offset);
-  oValue.unknown14 = readData<unsigned char>(buffer, offset);
-  oValue.unknown15 = readData<unsigned char>(buffer, offset);
-  oValue.unknown16 = readData<unsigned char>(buffer, offset);
-  oValue.unknown17 = readData<unsigned char>(buffer, offset);
-  oValue.unknown18[0] = readData<unsigned char>(buffer, offset);
-  oValue.unknown18[1] = readData<unsigned char>(buffer, offset);
-  oValue.unknown18[2] = readData<unsigned char>(buffer, offset);
-  oValue.unknown18[3] = readData<unsigned char>(buffer, offset);
+  nameUnicodeAddress++; //move to first string character
+  
+  //move buffer up to nameUnicodeAddress
+  while(nameUnicodeAddress != (const unsigned short *)(&buffer[offset]))
+  {
+    unsigned char c = readData<unsigned char>(buffer, offset);
+  }
 
   //nameUnicode
   oValue.nameUnicode = NULL;
