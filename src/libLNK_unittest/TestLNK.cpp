@@ -340,3 +340,58 @@ TEST_F(TestLNK, testWin7UsbDriveRemovableMedium)
   ASSERT_TRUE( success == true );
   ASSERT_TRUE( info.target == "Z:\\TUG\\Scope.txt" );
 }
+
+TEST_F(TestLNK, testWin7SpaceFilename)
+{
+  //Build test case link file
+  std::string lnkFilePath = getTestLink();
+
+  lnk::LinkInfo info;
+  bool success = lnk::getLinkInfo(lnkFilePath.c_str(), info);
+  ASSERT_TRUE( success == true );
+  ASSERT_TRUE( info.target == "G:\\Temp\\foo bar.txt" );
+}
+
+TEST_F(TestLNK, testWin7SpaceFolder)
+{
+  //Build test case link file
+  std::string lnkFilePath = getTestLink();
+
+  lnk::LinkInfo info;
+  bool success = lnk::getLinkInfo(lnkFilePath.c_str(), info);
+  ASSERT_TRUE( success == true );
+  ASSERT_TRUE( info.target == "G:\\Temp\\foo bar\\History.txt" );
+}
+
+TEST_F(TestLNK, testWin7SpecialCharactersEacute)
+{
+  //Build test case link file
+  std::string lnkFilePath = getTestLink();
+
+  lnk::LinkInfo info;
+  bool success = lnk::getLinkInfo(lnkFilePath.c_str(), info);
+  ASSERT_TRUE( success == true );
+  ASSERT_TRUE( info.target == "G:\\Temp\\école.txt" );
+}
+
+TEST_F(TestLNK, testWin7SpecialCharactersNtilde)
+{
+  //Build test case link file
+  std::string lnkFilePath = getTestLink();
+
+  lnk::LinkInfo info;
+  bool success = lnk::getLinkInfo(lnkFilePath.c_str(), info);
+  ASSERT_TRUE( success == true );
+  ASSERT_TRUE( info.target == "G:\\Temp\\español.txt" );
+}
+
+TEST_F(TestLNK, testWin7SpecialCharactersCcedil)
+{
+  //Build test case link file
+  std::string lnkFilePath = getTestLink();
+
+  lnk::LinkInfo info;
+  bool success = lnk::getLinkInfo(lnkFilePath.c_str(), info);
+  ASSERT_TRUE( success == true );
+  ASSERT_TRUE( info.target == "G:\\Temp\\français.txt" );
+}

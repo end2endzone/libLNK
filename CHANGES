@@ -1,8 +1,9 @@
 Changes for 0.1.0:
 
-* New Feature: Implemented issue  #1 - Move code to liblnk namespace.
-* New Feature: Implemented issue  #2 - Replace standalone functions by filesystemfunc.cpp code of other projects.
-* New Feature: Implemented issue  #3 - Create a version API for the library.
-* New Feature: Implemented issue  #4 - Rename test files to match test names.
-* New Feature: Implemented issue #10 - Move isLink() function to private scope.
+* New Feature: Issue  #1 - Move code to liblnk namespace.
+* New Feature: Issue  #2 - Replace standalone functions by filesystemfunc.cpp code of other projects.
+* New Feature: Issue  #3 - Create a version API for the library.
+* New Feature: Issue  #4 - Rename test files to match test names.
+* New Feature: Issue  #6 - Create unit tests from shortcut created by multiple operating systems.
+* New Feature: Issue #10 - Move isLink() function to private scope.
 * First public release.
