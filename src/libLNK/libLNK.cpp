@@ -41,8 +41,6 @@ struct LinkFlags
   bool reserved3                :8;
   bool reserved4                :8;
 };
-static const unsigned long LNK_FLAGS_SIZE = sizeof(LinkFlags);
-
 
 //Target flags
 struct FileAttributesFlags
@@ -64,29 +62,12 @@ struct FileAttributesFlags
   bool reserved2                      :8; //FILE_ATTRIBUTE_ENCRYPTED
   bool reserved3                      :8;
 };
-static const unsigned long LNK_TARGET_FLAGS_SIZE = sizeof(FileAttributesFlags);
 
-
-//4 bytes Always 4C 00 00 00 This is how windows knows it is a link file 
-//16 bytes GUID for link files The current GUID for links. It may change in the future. 01 14 02 00 00 00 00 00 c0 00 00 00 00 00 00 46 
-//1 dword Link flags Link flags are explained below 
-//1 dword Target file flags Flags are explained below 
-//1 qword Creation time   
-//1 qword Last access time   
-//1 qword Modification time   
-//1 dword File length The length of the target file. 0 if the target is not a file. This value is used to find the target when the link is broken. 
-//1 dword Icon number If the file has a custom icon (set by the flags bit 6), then this long integer indicates the index of the icon to use. Otherwise it is zero. 
-//1 dword Show Window the ShowWnd value to pass to the target application when starting it. 1:Normal Window 2:Minimized 3:Maximized 
-//1 dword Hot Key The hot key assigned for this link 
-//1 dword Reserved Always 0 
-//1 dword Reserved Always 0 
-static const unsigned char LNK_SIGNATURE_SIZE = 4;
 static const unsigned char LNK_GUID_SIZE = 16;
-static const unsigned char LNK_SIGNATURE_DEFAULT[LNK_SIGNATURE_SIZE] = {0x4c, 0x00, 0x00, 0x00};
 static const unsigned char LNK_GUID_DEFAULT[LNK_GUID_SIZE] = { 0x01, 0x14, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46};
 struct ShellLinkHeader
 {
-  unsigned char signature[LNK_SIGNATURE_SIZE];
+  uint32_t HeaderSize;
   unsigned char guid[LNK_GUID_SIZE];
   LinkFlags linkFlags; 
   FileAttributesFlags FileAttributes;
@@ -100,8 +81,6 @@ struct ShellLinkHeader
   unsigned long reserved1;
   unsigned long reserved2;
 };
-static const unsigned long LNK_HEADER_SIZE = sizeof(ShellLinkHeader);
-
 
 static const unsigned long LNK_LOCATION_UNKNOWN = 0;
 static const unsigned long LNK_LOCATION_LOCAL = 1;
@@ -561,13 +540,18 @@ bool isLink(const MemoryBuffer & iFileContent)
 
 bool isLink(const unsigned char * iBuffer, const unsigned long & iSize)
 {
-  if (iSize > LNK_HEADER_SIZE)
+  if (iSize > sizeof(ShellLinkHeader))
   {
     const ShellLinkHeader * header = (const ShellLinkHeader*)iBuffer;
 
-    bool signatureSuccess = (memcmp(header->signature, LNK_SIGNATURE_DEFAULT, LNK_SIGNATURE_SIZE) == 0);
-    bool guidSuccess =      (memcmp(header->guid, LNK_GUID_DEFAULT, LNK_GUID_SIZE) == 0);
-    return signatureSuccess && guidSuccess;
+    if (header->HeaderSize != sizeof(ShellLinkHeader))
+      return false;
+
+    bool guidSuccess = (memcmp(header->guid, LNK_GUID_DEFAULT, LNK_GUID_SIZE) == 0);
+    if (!guidSuccess)
+      return false;
+
+    return true;
   }
   return false;
 }
@@ -604,7 +588,7 @@ bool getLinkInfo(const char * iFilePath, LinkInfo & oLinkInfo)
       oLinkInfo.customIcon.index = header->IconIndex;
       oLinkInfo.hotKey = header->HotKey;
 
-      unsigned long offset = LNK_HEADER_SIZE;
+      unsigned long offset = sizeof(ShellLinkHeader);
 
       if (header->linkFlags.HasLinkTargetIDList)
       {
@@ -894,7 +878,7 @@ bool createLink(const char * iFilePath, const LinkInfo & iLinkInfo)
 {
   //building header
   ShellLinkHeader header = {0};
-  memcpy(header.signature, LNK_SIGNATURE_DEFAULT, LNK_SIGNATURE_SIZE);
+  header.HeaderSize = sizeof(ShellLinkHeader);
   memcpy(header.guid, LNK_GUID_DEFAULT, LNK_GUID_SIZE);
   
   //detect target
@@ -1076,11 +1060,7 @@ bool printLinkInfo(const char * iFilePath)
     ShellLinkHeader header = {0};
     fread(&header, 1, sizeof(header), f);
     //signature
-    printf("signature: 0x%02x 0x%02x 0x%02x 0x%02x \n", 
-      header.signature[0],
-      header.signature[1],
-      header.signature[2],
-      header.signature[3]     );
+    printf("HeaderSize: %d\n", header.HeaderSize);
     //guid
     printf("guid: 0x%02x 0x%02x 0x%02x 0x%02x \n", 
       header.guid[0],
