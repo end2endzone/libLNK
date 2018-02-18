@@ -63,12 +63,12 @@ struct FileAttributesFlags
   bool reserved3                      :8;
 };
 
-static const unsigned char LNK_GUID_SIZE = 16;
-static const unsigned char LNK_GUID_DEFAULT[LNK_GUID_SIZE] = { 0x01, 0x14, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46};
+typedef uint8_t LNK_CLSID[16];
+static const LNK_CLSID DEFAULT_LINKCLSID = { 0x01, 0x14, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46};
 struct ShellLinkHeader
 {
   uint32_t HeaderSize;
-  unsigned char guid[LNK_GUID_SIZE];
+  LNK_CLSID LinkCLSID;
   LinkFlags linkFlags; 
   FileAttributesFlags FileAttributes;
   unsigned __int64 CreationTime;
@@ -547,7 +547,7 @@ bool isLink(const unsigned char * iBuffer, const unsigned long & iSize)
     if (header->HeaderSize != sizeof(ShellLinkHeader))
       return false;
 
-    bool guidSuccess = (memcmp(header->guid, LNK_GUID_DEFAULT, LNK_GUID_SIZE) == 0);
+    bool guidSuccess = (memcmp(header->LinkCLSID, DEFAULT_LINKCLSID, sizeof(LNK_CLSID)) == 0);
     if (!guidSuccess)
       return false;
 
@@ -879,7 +879,7 @@ bool createLink(const char * iFilePath, const LinkInfo & iLinkInfo)
   //building header
   ShellLinkHeader header = {0};
   header.HeaderSize = sizeof(ShellLinkHeader);
-  memcpy(header.guid, LNK_GUID_DEFAULT, LNK_GUID_SIZE);
+  memcpy(header.LinkCLSID, DEFAULT_LINKCLSID, sizeof(LNK_CLSID));
   
   //detect target
   bool isTargetFolder = filesystem::folderExists(iLinkInfo.target.c_str());
@@ -1061,27 +1061,27 @@ bool printLinkInfo(const char * iFilePath)
     fread(&header, 1, sizeof(header), f);
     //signature
     printf("HeaderSize: %d\n", header.HeaderSize);
-    //guid
-    printf("guid: 0x%02x 0x%02x 0x%02x 0x%02x \n", 
-      header.guid[0],
-      header.guid[1],
-      header.guid[2],
-      header.guid[3]   );
+    //LinkCLSID
+    printf("LinkCLSID: 0x%02x 0x%02x 0x%02x 0x%02x \n", 
+      header.LinkCLSID[0],
+      header.LinkCLSID[1],
+      header.LinkCLSID[2],
+      header.LinkCLSID[3]   );
     printf("      0x%02x 0x%02x 0x%02x 0x%02x \n", 
-      header.guid[4],
-      header.guid[5],
-      header.guid[6],
-      header.guid[7]   );
+      header.LinkCLSID[4],
+      header.LinkCLSID[5],
+      header.LinkCLSID[6],
+      header.LinkCLSID[7]   );
     printf("      0x%02x 0x%02x 0x%02x 0x%02x \n", 
-      header.guid[8],
-      header.guid[9],
-      header.guid[10],
-      header.guid[11]   );
+      header.LinkCLSID[8],
+      header.LinkCLSID[9],
+      header.LinkCLSID[10],
+      header.LinkCLSID[11]   );
     printf("      0x%02x 0x%02x 0x%02x 0x%02x \n", 
-      header.guid[12],
-      header.guid[13],
-      header.guid[14],
-      header.guid[15]   );
+      header.LinkCLSID[12],
+      header.LinkCLSID[13],
+      header.LinkCLSID[14],
+      header.LinkCLSID[15]   );
     //link flags
     printf("link flags: HasLinkTargetIDList   =%c\n", (header.linkFlags.HasLinkTargetIDList ? 'T' : 'F')  );
     printf("                HasLinkInfo  =%c\n", (header.linkFlags.HasLinkInfo ? 'T' : 'F')  );
