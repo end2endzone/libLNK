@@ -27,7 +27,7 @@ typedef std::vector<std::string> StringList;
 #pragma pack(1)
 
 //Link flags
-struct LinkFlags
+struct LinkFlags //32 bits
 {
   bool HasLinkTargetIDList      :1;
   bool HasLinkInfo              :1;
@@ -43,24 +43,24 @@ struct LinkFlags
 };
 
 //Target flags
-struct FileAttributesFlags
+struct FileAttributesFlags //32 bits
 {
-  bool isReadOnly                     :1; //FILE_ATTRIBUTE_READONLY
-  bool isHidden                       :1; //FILE_ATTRIBUTE_HIDDEN
-  bool isSystemFile                   :1; //FILE_ATTRIBUTE_SYSTEM
-  bool isVolumeLabel                  :1; //Reserved1, MUST be zero.
-  bool isDirectory                    :1; //FILE_ATTRIBUTE_DIRECTORY
-  bool hasBeenModifiedSinceLastBackup :1; //FILE_ATTRIBUTE_ARCHIVE
-  bool isEncrypted                    :1; //Reserved2, MUST be zero.
-  bool isNormal                       :1; //FILE_ATTRIBUTE_NORMAL
-  bool isTemporary                    :1; //FILE_ATTRIBUTE_TEMPORARY
-  bool isSparseFile                   :1; //FILE_ATTRIBUTE_SPARSE_FILE
-  bool hasReparsePointData            :1; //FILE_ATTRIBUTE_REPARSE_POINT
-  bool isCompressed                   :1; //FILE_ATTRIBUTE_COMPRESSED
-  bool isOffline                      :1; //FILE_ATTRIBUTE_OFFLINE
-  bool reserved1                      :3; //FILE_ATTRIBUTE_NOT_CONTENT_INDEXED
-  bool reserved2                      :8; //FILE_ATTRIBUTE_ENCRYPTED
-  bool reserved3                      :8;
+  bool isReadOnly             :1; //FILE_ATTRIBUTE_READONLY
+  bool isHidden               :1; //FILE_ATTRIBUTE_HIDDEN
+  bool isSystemFile           :1; //FILE_ATTRIBUTE_SYSTEM
+  bool isVolumeLabel          :1; //Reserved1, MUST be zero.
+  bool isDirectory            :1; //FILE_ATTRIBUTE_DIRECTORY
+  bool isArchive              :1; //FILE_ATTRIBUTE_ARCHIVE
+  bool isEncrypted            :1; //Reserved2, MUST be zero.
+  bool isNormal               :1; //FILE_ATTRIBUTE_NORMAL
+  bool isTemporary            :1; //FILE_ATTRIBUTE_TEMPORARY
+  bool isSparseFile           :1; //FILE_ATTRIBUTE_SPARSE_FILE
+  bool hasReparsePoint    :1; //FILE_ATTRIBUTE_REPARSE_POINT
+  bool isCompressed           :1; //FILE_ATTRIBUTE_COMPRESSED
+  bool isOffline              :1; //FILE_ATTRIBUTE_OFFLINE
+  bool reserved1              :3; //FILE_ATTRIBUTE_NOT_CONTENT_INDEXED
+  bool reserved2              :8; //FILE_ATTRIBUTE_ENCRYPTED
+  bool reserved3              :8;
 };
 
 typedef uint8_t LNK_CLSID[16];
@@ -78,8 +78,9 @@ struct ShellLinkHeader
   unsigned long IconIndex;
   unsigned long ShowCommand;
   LNK_HOTKEY HotKey;
-  unsigned long reserved1;
-  unsigned long reserved2;
+  uint16_t Reserved1;
+  uint32_t Reserved2;
+  uint32_t Reserved3;
 };
 
 static const unsigned long LNK_LOCATION_UNKNOWN = 0;
@@ -161,7 +162,7 @@ struct LNK_NETWORK_VOLUME_TABLE
 };
 static const unsigned long LNK_NETWORK_VOLUME_TABLE_SIZE = sizeof(LNK_NETWORK_VOLUME_TABLE);
 
-//itemId structure used in shellItemIdList part of a link
+//itemId structure used in LinkTargetIDList part of a link
 struct LNK_ITEMID
 {
   unsigned short size;
@@ -673,7 +674,7 @@ bool getLinkInfo(const char * iFilePath, LinkInfo & oLinkInfo)
           //concat paths
           if (oLinkInfo.target.size() == 0)
           {
-            //target was not resolved using shellItemIdList, resolve using base and final paths
+            //target was not resolved using LinkTargetIDList, resolve using base and final paths
             if (basePath.size() > 0)
               oLinkInfo.target = basePath;
             if (finalPath.size() > 0)
@@ -851,10 +852,10 @@ MemoryBuffer createShellItemIdList(const char * iFilePath, const LinkInfo & iLin
       return shellIdList; //folder ItemId names are not found
   }
 
-  //compute shellItemIdList's size
+  //compute LinkTargetIDList's size
   unsigned short shellIdListSize = 0;
 
-  //building shellItemIdList
+  //building LinkTargetIDList
   serialize(shellIdListSize, shellIdList);
   serialize(itemIdComputerData, itemIdComputerSize, shellIdList); //size of itemId is part of the data
   serialize(itemIdDriveData, itemIdDriveSize, shellIdList); //size of itemId is part of the data
@@ -867,7 +868,7 @@ MemoryBuffer createShellItemIdList(const char * iFilePath, const LinkInfo & iLin
   }
   serialize(itemIdFinalData, itemIdFinalDataSize, shellIdList); //final data is not preceded by a length
 
-  //update shellItemIdList's size
+  //update LinkTargetIDList's size
   shellIdListSize = (unsigned short)shellIdList.getSize() - sizeof(shellIdListSize); //size does not include itself
   (*(unsigned short*)shellIdList.getBuffer()) = shellIdListSize;
 
@@ -909,12 +910,12 @@ bool createLink(const char * iFilePath, const LinkInfo & iLinkInfo)
     flags.isSystemFile = 0;
     flags.isVolumeLabel = 0;
     flags.isDirectory = isTargetFolder;
-    flags.hasBeenModifiedSinceLastBackup = 1;
+    flags.isArchive = 1;
     flags.isEncrypted = 0;
     flags.isNormal = 0;
     flags.isTemporary = 0;
     flags.isSparseFile = 0;
-    flags.hasReparsePointData = 0;
+    flags.hasReparsePoint = 0;
     flags.isCompressed = 0;
     flags.isOffline = 0;
     flags.reserved1 = 0;
@@ -929,13 +930,14 @@ bool createLink(const char * iFilePath, const LinkInfo & iLinkInfo)
   header.IconIndex = (iLinkInfo.customIcon.filename.size() > 0 ? iLinkInfo.customIcon.index : 0);
   header.ShowCommand = 1;
   header.HotKey = iLinkInfo.hotKey;
-  header.reserved1 = 0;
-  header.reserved2 = 0;
+  header.Reserved1 = 0;
+  header.Reserved2 = 0;
+  header.Reserved3 = 0;
 
-  //shellItemIdList
-  MemoryBuffer shellItemIdList = createShellItemIdList(iFilePath, iLinkInfo);
-  if (shellItemIdList.getSize() == 0)
-    return false; //unable to build shellItemIdList
+  //LinkTargetIDList
+  MemoryBuffer LinkTargetIDList = createShellItemIdList(iFilePath, iLinkInfo);
+  if (LinkTargetIDList.getSize() == 0)
+    return false; //unable to build LinkTargetIDList
 
   //File location info
   LNK_FILE_LOCATION_INFO fileInfo = {0};
@@ -964,9 +966,9 @@ bool createLink(const char * iFilePath, const LinkInfo & iLinkInfo)
     tmp = sizeof(header);
     fwrite(&header, 1, tmp, f);
 
-    //shellItemIdList
-    tmp = shellItemIdList.getSize();
-    fwrite(shellItemIdList.getBuffer(), 1, tmp, f);
+    //LinkTargetIDList
+    tmp = LinkTargetIDList.getSize();
+    fwrite(LinkTargetIDList.getBuffer(), 1, tmp, f);
 
     //File location info & volume table
     tmp = sizeof(fileInfo);
@@ -1095,22 +1097,22 @@ bool printLinkInfo(const char * iFilePath)
     printf("                reserved3                =%02x\n", header.linkFlags.reserved3 );
     printf("                reserved4                =%02x\n", header.linkFlags.reserved4 );
     //target flags
-    printf("target flags: isReadOnly                      =%c\n", (header.FileAttributes.isReadOnly ? 'T' : 'F')  );
-    printf("              isHidden                        =%c\n", (header.FileAttributes.isHidden ? 'T' : 'F')  );
-    printf("              isSystemFile                    =%c\n", (header.FileAttributes.isSystemFile ? 'T' : 'F')  );
-    printf("              isVolumeLabel                   =%c\n", (header.FileAttributes.isVolumeLabel ? 'T' : 'F')  );
-    printf("              isDirectory                     =%c\n", (header.FileAttributes.isDirectory ? 'T' : 'F')  );
-    printf("              hasBeenModifiedSinceLastBackup  =%c\n", (header.FileAttributes.hasBeenModifiedSinceLastBackup ? 'T' : 'F')  );
-    printf("              isEncrypted                     =%c\n", (header.FileAttributes.isEncrypted ? 'T' : 'F')  );
-    printf("              isNormal                        =%c\n", (header.FileAttributes.isNormal ? 'T' : 'F')  );
-    printf("              isTemporary                     =%c\n", (header.FileAttributes.isTemporary ? 'T' : 'F')  );
-    printf("              isSparseFile                    =%c\n", (header.FileAttributes.isSparseFile ? 'T' : 'F')  );
-    printf("              hasReparsePointData             =%c\n", (header.FileAttributes.hasReparsePointData ? 'T' : 'F')  );
-    printf("              isCompressed                    =%c\n", (header.FileAttributes.isCompressed ? 'T' : 'F')  );
-    printf("              isOffline                       =%c\n", (header.FileAttributes.isOffline ? 'T' : 'F')  );
-    printf("              reserved1                       =%c\n", (header.FileAttributes.reserved1 ? 'T' : 'F')  );
-    printf("              reserved2                       =%c\n", (header.FileAttributes.reserved2 ? 'T' : 'F')  );
-    printf("              reserved3                       =%c\n", (header.FileAttributes.reserved3 ? 'T' : 'F')  );
+    printf("target flags: isReadOnly      =%c\n", (header.FileAttributes.isReadOnly ? 'T' : 'F')  );
+    printf("              isHidden        =%c\n", (header.FileAttributes.isHidden ? 'T' : 'F')  );
+    printf("              isSystemFile    =%c\n", (header.FileAttributes.isSystemFile ? 'T' : 'F')  );
+    printf("              isVolumeLabel   =%c\n", (header.FileAttributes.isVolumeLabel ? 'T' : 'F')  );
+    printf("              isDirectory     =%c\n", (header.FileAttributes.isDirectory ? 'T' : 'F')  );
+    printf("              isArchive       =%c\n", (header.FileAttributes.isArchive ? 'T' : 'F')  );
+    printf("              isEncrypted     =%c\n", (header.FileAttributes.isEncrypted ? 'T' : 'F')  );
+    printf("              isNormal        =%c\n", (header.FileAttributes.isNormal ? 'T' : 'F')  );
+    printf("              isTemporary     =%c\n", (header.FileAttributes.isTemporary ? 'T' : 'F')  );
+    printf("              isSparseFile    =%c\n", (header.FileAttributes.isSparseFile ? 'T' : 'F')  );
+    printf("              hasReparsePoint =%c\n", (header.FileAttributes.hasReparsePoint ? 'T' : 'F')  );
+    printf("              isCompressed    =%c\n", (header.FileAttributes.isCompressed ? 'T' : 'F')  );
+    printf("              isOffline       =%c\n", (header.FileAttributes.isOffline ? 'T' : 'F')  );
+    printf("              reserved1       =%c\n", (header.FileAttributes.reserved1 ? 'T' : 'F')  );
+    printf("              reserved2       =%c\n", (header.FileAttributes.reserved2 ? 'T' : 'F')  );
+    printf("              reserved3       =%c\n", (header.FileAttributes.reserved3 ? 'T' : 'F')  );
     std::string creationTimeStr = toTimeString(header.CreationTime);
     std::string modificationTimeStr = toTimeString(header.WriteTime);
     std::string lastAccessTimeStr = toTimeString(header.AccessTime);
@@ -1128,15 +1130,16 @@ bool printLinkInfo(const char * iFilePath)
     printf("ShowCommand = 0x%04x\n", header.ShowCommand);
     std::string hotKeyDescription = toString(header.HotKey);
     printf("HotKey    = 0x%04x (%s)\n", header.HotKey, hotKeyDescription.c_str());
-    printf("reserved1 = 0x%04x\n", header.reserved1);
-    printf("reserved2 = 0x%04x\n", header.reserved2);
+    printf("Reserved1 = 0x%04x\n", header.Reserved1);
+    printf("Reserved2 = 0x%04x\n", header.Reserved2);
+    printf("Reserved3 = 0x%04x\n", header.Reserved3);
 
-    //shellItemIdList
+    //LinkTargetIDList
     if (header.linkFlags.HasLinkTargetIDList)
     {
       unsigned short listSize = 0;
       fread(&listSize, 1, sizeof(listSize), f);
-      printf("shellItemIdList size=0x%02x (%02d)\n", listSize, listSize);
+      printf("LinkTargetIDList size=0x%02x (%02d)\n", listSize, listSize);
 
       unsigned short itemIdSize = 0xFFFF;
       unsigned char sequenceNumber = 0;

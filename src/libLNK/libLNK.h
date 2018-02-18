@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <stdint.h>
 
 namespace lnk
 {
@@ -69,8 +70,8 @@ enum LNK_HOTKEY_MODIFIERS
 };
 struct LNK_HOTKEY
 {
-  LNK_HOTKEY_CODES keyCode       :8;
-  LNK_HOTKEY_MODIFIERS modifiers :24;
+  uint8_t keyCode;    //LNK_HOTKEY_CODES
+  uint8_t modifiers;  //LNK_HOTKEY_MODIFIERS
 };
 extern const LNK_HOTKEY LNK_NO_HOTKEY;
 
