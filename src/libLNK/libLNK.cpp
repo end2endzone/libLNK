@@ -45,22 +45,22 @@ struct LinkFlags //32 bits
 //Target flags
 struct FileAttributesFlags //32 bits
 {
-  bool isReadOnly             :1; //FILE_ATTRIBUTE_READONLY
-  bool isHidden               :1; //FILE_ATTRIBUTE_HIDDEN
-  bool isSystemFile           :1; //FILE_ATTRIBUTE_SYSTEM
-  bool isVolumeLabel          :1; //Reserved1, MUST be zero.
-  bool isDirectory            :1; //FILE_ATTRIBUTE_DIRECTORY
-  bool isArchive              :1; //FILE_ATTRIBUTE_ARCHIVE
-  bool isEncrypted            :1; //Reserved2, MUST be zero.
-  bool isNormal               :1; //FILE_ATTRIBUTE_NORMAL
-  bool isTemporary            :1; //FILE_ATTRIBUTE_TEMPORARY
-  bool isSparseFile           :1; //FILE_ATTRIBUTE_SPARSE_FILE
-  bool hasReparsePoint    :1; //FILE_ATTRIBUTE_REPARSE_POINT
-  bool isCompressed           :1; //FILE_ATTRIBUTE_COMPRESSED
-  bool isOffline              :1; //FILE_ATTRIBUTE_OFFLINE
-  bool reserved1              :3; //FILE_ATTRIBUTE_NOT_CONTENT_INDEXED
-  bool reserved2              :8; //FILE_ATTRIBUTE_ENCRYPTED
-  bool reserved3              :8;
+  bool isReadOnly      :1; //FILE_ATTRIBUTE_READONLY
+  bool isHidden        :1; //FILE_ATTRIBUTE_HIDDEN
+  bool isSystemFile    :1; //FILE_ATTRIBUTE_SYSTEM
+  bool isVolumeLabel   :1; //Reserved1, MUST be zero.
+  bool isDirectory     :1; //FILE_ATTRIBUTE_DIRECTORY
+  bool isArchive       :1; //FILE_ATTRIBUTE_ARCHIVE
+  bool isEncrypted     :1; //Reserved2, MUST be zero.
+  bool isNormal        :1; //FILE_ATTRIBUTE_NORMAL
+  bool isTemporary     :1; //FILE_ATTRIBUTE_TEMPORARY
+  bool isSparseFile    :1; //FILE_ATTRIBUTE_SPARSE_FILE
+  bool hasReparsePoint :1; //FILE_ATTRIBUTE_REPARSE_POINT
+  bool isCompressed    :1; //FILE_ATTRIBUTE_COMPRESSED
+  bool isOffline       :1; //FILE_ATTRIBUTE_OFFLINE
+  bool reserved1       :3; //FILE_ATTRIBUTE_NOT_CONTENT_INDEXED
+  bool reserved2       :8; //FILE_ATTRIBUTE_ENCRYPTED
+  bool reserved3       :8;
 };
 
 typedef uint8_t LNK_CLSID[16];
@@ -543,12 +543,13 @@ bool isLink(const unsigned char * iBuffer, const unsigned long & iSize)
 {
   if (iSize > sizeof(ShellLinkHeader))
   {
-    const ShellLinkHeader * header = (const ShellLinkHeader*)iBuffer;
+    unsigned long offset = 0;
+    const ShellLinkHeader & header = readData<const ShellLinkHeader>(iBuffer, offset);
 
-    if (header->HeaderSize != sizeof(ShellLinkHeader))
+    if (header.HeaderSize != sizeof(ShellLinkHeader))
       return false;
 
-    bool guidSuccess = (memcmp(header->LinkCLSID, DEFAULT_LINKCLSID, sizeof(LNK_CLSID)) == 0);
+    bool guidSuccess = (memcmp(header.LinkCLSID, DEFAULT_LINKCLSID, sizeof(LNK_CLSID)) == 0);
     if (!guidSuccess)
       return false;
 
@@ -583,15 +584,15 @@ bool getLinkInfo(const char * iFilePath, LinkInfo & oLinkInfo)
     bool link = isLink(fileContent);
     if (link)
     {
-      const ShellLinkHeader * header = (const ShellLinkHeader*)fileContent.getBuffer();
+      unsigned long offset = 0;
       const unsigned char * content = fileContent.getBuffer();
+      
+      const ShellLinkHeader & header = readData<const ShellLinkHeader>(content, offset);
 
-      oLinkInfo.customIcon.index = header->IconIndex;
-      oLinkInfo.hotKey = header->HotKey;
+      oLinkInfo.customIcon.index = header.IconIndex;
+      oLinkInfo.hotKey = header.HotKey;
 
-      unsigned long offset = sizeof(ShellLinkHeader);
-
-      if (header->linkFlags.HasLinkTargetIDList)
+      if (header.linkFlags.HasLinkTargetIDList)
       {
         //Shell Item Id List 
         //Note: This section exists only if the first bit for link flags is set the header section.
@@ -601,8 +602,8 @@ bool getLinkInfo(const char * iFilePath, LinkInfo & oLinkInfo)
         //      The size includes and the space used to store it. The last item has the size 0.
         //      These items are used to store various informations.
         //      For more info read the SHITEMID documentation. 
-        const unsigned short & listSize = readData<unsigned short>(content, offset);
-        unsigned short itemIdSize = 0xFFFF;
+        const uint16_t & IDListSize = readData<unsigned short>(content, offset);
+        uint16_t itemIdSize = 0xFFFF;
         while (itemIdSize != 0)
         {
           itemIdSize = readData<unsigned short>(content, offset);
@@ -716,7 +717,7 @@ bool getLinkInfo(const char * iFilePath, LinkInfo & oLinkInfo)
       //The first word value indicates the length of the string.
       //Following the length value is a string of ASCII characters.
       //It is a description of the item.
-      if (header->linkFlags.HasName)
+      if (header.linkFlags.HasName)
         readString(content, offset, oLinkInfo.description);
       
       //Relative path string
@@ -725,7 +726,7 @@ bool getLinkInfo(const char * iFilePath, LinkInfo & oLinkInfo)
       //Following the length value is a string of ASCII characters.
       //It is a relative path to the target.
       std::string relativePath;
-      if (header->linkFlags.HasRelativePath)
+      if (header.linkFlags.HasRelativePath)
         readString(content, offset, relativePath);
 
       //Working directory
@@ -733,7 +734,7 @@ bool getLinkInfo(const char * iFilePath, LinkInfo & oLinkInfo)
       //The first word value indicates the length of the string.
       //Following the length value is a string of ASCII characters.
       //It is the working directory as specified in the link properties.
-      if (header->linkFlags.HasWorkingDir)
+      if (header.linkFlags.HasWorkingDir)
         readString(content, offset, oLinkInfo.workingDirectory);
 
       //Command line arguments
@@ -741,7 +742,7 @@ bool getLinkInfo(const char * iFilePath, LinkInfo & oLinkInfo)
       //The first word value indicates the length of the string.
       //Following the length value is a string of ASCII characters.
       //The command line string includes everything except the program name.
-      if (header->linkFlags.HasArguments)
+      if (header.linkFlags.HasArguments)
         readString(content, offset, oLinkInfo.arguments);
 
       //Icon filename
@@ -749,7 +750,7 @@ bool getLinkInfo(const char * iFilePath, LinkInfo & oLinkInfo)
       //The first word value indicates the length of the string.
       //Following the length value is a string of ASCII characters.
       //This the name of the file containing the icon.
-      if (header->linkFlags.HasIconLocation)
+      if (header.linkFlags.HasIconLocation)
         readString(content, offset, oLinkInfo.customIcon.filename);
 
       //Additonal Info Usualy consists of a dword with the value 0.
