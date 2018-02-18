@@ -27,64 +27,44 @@ typedef std::vector<std::string> StringList;
 #pragma pack(1)
 
 //Link flags
-//0 Shell item id list is present 
-//1 Target is a file or directory 
-//2 Has a description 
-//3 Has a relative path 
-//4 Has a working directory 
-//5 Has command line arguments 
-//6 Has a custom icon. 
-struct LNK_FLAGS
+struct LinkFlags
 {
-  bool shellItemIdListPresent   :1;
-  bool targetIsFileOrDirectory  :1;
-  bool hasDescription           :1;
-  bool hasRelativePath          :1;
-  bool hasWorkingDirectory      :1;
-  bool hasCommandLineArguments  :1;
-  bool hasCustomIcon            :1;
+  bool HasLinkTargetIDList      :1;
+  bool HasLinkInfo              :1;
+  bool HasName                  :1;
+  bool HasRelativePath          :1;
+  bool HasWorkingDir            :1;
+  bool HasArguments             :1;
+  bool HasIconLocation          :1;
   bool reserved1                :1;
   bool reserved2                :8;
   bool reserved3                :8;
   bool reserved4                :8;
 };
-static const unsigned long LNK_FLAGS_SIZE = sizeof(LNK_FLAGS);
+static const unsigned long LNK_FLAGS_SIZE = sizeof(LinkFlags);
 
 
 //Target flags
-//0 Target is read only. 
-//1 Target is hidden. 
-//2 Target is a system file. 
-//3 Target is a volume label. (Not possible) 
-//4 Target is a directory. 
-//5 Target has been modified since last backup. (archive) 
-//6 Target is encrypted (NTFS partitions) 
-//7 Target is Normal 
-//8 Target is temporary. 
-//9 Target is a sparse file. 
-//10 Target has reparse point data. 
-//11 Target is compressed. 
-//12 Target is offline. 
-struct LNK_TARGET_FLAGS
+struct FileAttributesFlags
 {
-  bool isReadOnly                     :1;
-  bool isHidden                       :1;
-  bool isSystemFile                   :1;
-  bool isVolumeLabel                  :1;
-  bool isDirectory                    :1;
-  bool hasBeenModifiedSinceLastBackup :1;
-  bool isEncrypted                    :1;
-  bool isNormal                       :1;
-  bool isTemporary                    :1;
-  bool isSparseFile                   :1;
-  bool hasReparsePointData            :1;
-  bool isCompressed                   :1;
-  bool isOffline                      :1;
-  bool reserved1                      :3;
-  bool reserved2                      :8;
+  bool isReadOnly                     :1; //FILE_ATTRIBUTE_READONLY
+  bool isHidden                       :1; //FILE_ATTRIBUTE_HIDDEN
+  bool isSystemFile                   :1; //FILE_ATTRIBUTE_SYSTEM
+  bool isVolumeLabel                  :1; //Reserved1, MUST be zero.
+  bool isDirectory                    :1; //FILE_ATTRIBUTE_DIRECTORY
+  bool hasBeenModifiedSinceLastBackup :1; //FILE_ATTRIBUTE_ARCHIVE
+  bool isEncrypted                    :1; //Reserved2, MUST be zero.
+  bool isNormal                       :1; //FILE_ATTRIBUTE_NORMAL
+  bool isTemporary                    :1; //FILE_ATTRIBUTE_TEMPORARY
+  bool isSparseFile                   :1; //FILE_ATTRIBUTE_SPARSE_FILE
+  bool hasReparsePointData            :1; //FILE_ATTRIBUTE_REPARSE_POINT
+  bool isCompressed                   :1; //FILE_ATTRIBUTE_COMPRESSED
+  bool isOffline                      :1; //FILE_ATTRIBUTE_OFFLINE
+  bool reserved1                      :3; //FILE_ATTRIBUTE_NOT_CONTENT_INDEXED
+  bool reserved2                      :8; //FILE_ATTRIBUTE_ENCRYPTED
   bool reserved3                      :8;
 };
-static const unsigned long LNK_TARGET_FLAGS_SIZE = sizeof(LNK_TARGET_FLAGS);
+static const unsigned long LNK_TARGET_FLAGS_SIZE = sizeof(FileAttributesFlags);
 
 
 //4 bytes Always 4C 00 00 00 This is how windows knows it is a link file 
@@ -104,23 +84,23 @@ static const unsigned char LNK_SIGNATURE_SIZE = 4;
 static const unsigned char LNK_GUID_SIZE = 16;
 static const unsigned char LNK_SIGNATURE_DEFAULT[LNK_SIGNATURE_SIZE] = {0x4c, 0x00, 0x00, 0x00};
 static const unsigned char LNK_GUID_DEFAULT[LNK_GUID_SIZE] = { 0x01, 0x14, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46};
-struct LNK_HEADER
+struct ShellLinkHeader
 {
   unsigned char signature[LNK_SIGNATURE_SIZE];
   unsigned char guid[LNK_GUID_SIZE];
-  LNK_FLAGS linkFlags; 
-  LNK_TARGET_FLAGS targetFlags;
-  unsigned __int64 creationTime;
-  unsigned __int64 lastAccessTime;
-  unsigned __int64 modificationTime;
-  unsigned long targetFileLength;
-  unsigned long customIconNumber;
-  unsigned long showWindowValue;
-  LNK_HOTKEY hotKey;
+  LinkFlags linkFlags; 
+  FileAttributesFlags FileAttributes;
+  unsigned __int64 CreationTime;
+  unsigned __int64 AccessTime;
+  unsigned __int64 WriteTime;
+  unsigned long FileSize;
+  unsigned long IconIndex;
+  unsigned long ShowCommand;
+  LNK_HOTKEY HotKey;
   unsigned long reserved1;
   unsigned long reserved2;
 };
-static const unsigned long LNK_HEADER_SIZE = sizeof(LNK_HEADER);
+static const unsigned long LNK_HEADER_SIZE = sizeof(ShellLinkHeader);
 
 
 static const unsigned long LNK_LOCATION_UNKNOWN = 0;
@@ -583,7 +563,7 @@ bool isLink(const unsigned char * iBuffer, const unsigned long & iSize)
 {
   if (iSize > LNK_HEADER_SIZE)
   {
-    const LNK_HEADER * header = (const LNK_HEADER*)iBuffer;
+    const ShellLinkHeader * header = (const ShellLinkHeader*)iBuffer;
 
     bool signatureSuccess = (memcmp(header->signature, LNK_SIGNATURE_DEFAULT, LNK_SIGNATURE_SIZE) == 0);
     bool guidSuccess =      (memcmp(header->guid, LNK_GUID_DEFAULT, LNK_GUID_SIZE) == 0);
@@ -618,15 +598,15 @@ bool getLinkInfo(const char * iFilePath, LinkInfo & oLinkInfo)
     bool link = isLink(fileContent);
     if (link)
     {
-      const LNK_HEADER * header = (const LNK_HEADER*)fileContent.getBuffer();
+      const ShellLinkHeader * header = (const ShellLinkHeader*)fileContent.getBuffer();
       const unsigned char * content = fileContent.getBuffer();
 
-      oLinkInfo.customIcon.index = header->customIconNumber;
-      oLinkInfo.hotKey = header->hotKey;
+      oLinkInfo.customIcon.index = header->IconIndex;
+      oLinkInfo.hotKey = header->HotKey;
 
       unsigned long offset = LNK_HEADER_SIZE;
 
-      if (header->linkFlags.shellItemIdListPresent)
+      if (header->linkFlags.HasLinkTargetIDList)
       {
         //Shell Item Id List 
         //Note: This section exists only if the first bit for link flags is set the header section.
@@ -751,7 +731,7 @@ bool getLinkInfo(const char * iFilePath, LinkInfo & oLinkInfo)
       //The first word value indicates the length of the string.
       //Following the length value is a string of ASCII characters.
       //It is a description of the item.
-      if (header->linkFlags.hasDescription)
+      if (header->linkFlags.HasName)
         readString(content, offset, oLinkInfo.description);
       
       //Relative path string
@@ -760,7 +740,7 @@ bool getLinkInfo(const char * iFilePath, LinkInfo & oLinkInfo)
       //Following the length value is a string of ASCII characters.
       //It is a relative path to the target.
       std::string relativePath;
-      if (header->linkFlags.hasRelativePath)
+      if (header->linkFlags.HasRelativePath)
         readString(content, offset, relativePath);
 
       //Working directory
@@ -768,7 +748,7 @@ bool getLinkInfo(const char * iFilePath, LinkInfo & oLinkInfo)
       //The first word value indicates the length of the string.
       //Following the length value is a string of ASCII characters.
       //It is the working directory as specified in the link properties.
-      if (header->linkFlags.hasWorkingDirectory)
+      if (header->linkFlags.HasWorkingDir)
         readString(content, offset, oLinkInfo.workingDirectory);
 
       //Command line arguments
@@ -776,7 +756,7 @@ bool getLinkInfo(const char * iFilePath, LinkInfo & oLinkInfo)
       //The first word value indicates the length of the string.
       //Following the length value is a string of ASCII characters.
       //The command line string includes everything except the program name.
-      if (header->linkFlags.hasCommandLineArguments)
+      if (header->linkFlags.HasArguments)
         readString(content, offset, oLinkInfo.arguments);
 
       //Icon filename
@@ -784,7 +764,7 @@ bool getLinkInfo(const char * iFilePath, LinkInfo & oLinkInfo)
       //The first word value indicates the length of the string.
       //Following the length value is a string of ASCII characters.
       //This the name of the file containing the icon.
-      if (header->linkFlags.hasCustomIcon)
+      if (header->linkFlags.HasIconLocation)
         readString(content, offset, oLinkInfo.customIcon.filename);
 
       //Additonal Info Usualy consists of a dword with the value 0.
@@ -913,7 +893,7 @@ MemoryBuffer createShellItemIdList(const char * iFilePath, const LinkInfo & iLin
 bool createLink(const char * iFilePath, const LinkInfo & iLinkInfo)
 {
   //building header
-  LNK_HEADER header = {0};
+  ShellLinkHeader header = {0};
   memcpy(header.signature, LNK_SIGNATURE_DEFAULT, LNK_SIGNATURE_SIZE);
   memcpy(header.guid, LNK_GUID_DEFAULT, LNK_GUID_SIZE);
   
@@ -921,25 +901,25 @@ bool createLink(const char * iFilePath, const LinkInfo & iLinkInfo)
   bool isTargetFolder = filesystem::folderExists(iLinkInfo.target.c_str());
   bool isTargetFile = filesystem::fileExists(iLinkInfo.target.c_str());
 
-  //building LNK_FLAGS
+  //building LinkFlags
   {
-    LNK_FLAGS & flags = header.linkFlags;
-    flags.shellItemIdListPresent = 1;
-    flags.targetIsFileOrDirectory = isTargetFile || isTargetFolder;
-    flags.hasDescription = iLinkInfo.description.size() > 0;
-    flags.hasRelativePath = 0;
-    flags.hasWorkingDirectory = iLinkInfo.workingDirectory.size() > 0;
-    flags.hasCommandLineArguments = iLinkInfo.arguments.size() > 0;
-    flags.hasCustomIcon = iLinkInfo.customIcon.filename.size() > 0;
+    LinkFlags & flags = header.linkFlags;
+    flags.HasLinkTargetIDList = 1;
+    flags.HasLinkInfo = isTargetFile || isTargetFolder;
+    flags.HasName = iLinkInfo.description.size() > 0;
+    flags.HasRelativePath = 0;
+    flags.HasWorkingDir = iLinkInfo.workingDirectory.size() > 0;
+    flags.HasArguments = iLinkInfo.arguments.size() > 0;
+    flags.HasIconLocation = iLinkInfo.customIcon.filename.size() > 0;
     flags.reserved1 = 1;
     flags.reserved2 = 0;
     flags.reserved3 = 0;
     flags.reserved4 = 0;
   }
 
-  //build LNK_TARGET_FLAGS
+  //build FileAttributesFlags
   {
-    LNK_TARGET_FLAGS & flags = header.targetFlags;
+    FileAttributesFlags & flags = header.FileAttributes;
     flags.isReadOnly = 0;
     flags.isHidden = 0;
     flags.isSystemFile = 0;
@@ -958,13 +938,13 @@ bool createLink(const char * iFilePath, const LinkInfo & iLinkInfo)
     flags.reserved3 = 0;
   }
 
-  header.creationTime = 0;
-  header.lastAccessTime = 0;
-  header.modificationTime = 0;
-  header.targetFileLength = (isTargetFile ? filesystem::getFileSize(iLinkInfo.target.c_str()) : 0);
-  header.customIconNumber = (iLinkInfo.customIcon.filename.size() > 0 ? iLinkInfo.customIcon.index : 0);
-  header.showWindowValue = 1;
-  header.hotKey = iLinkInfo.hotKey;
+  header.CreationTime = 0;
+  header.AccessTime = 0;
+  header.WriteTime = 0;
+  header.FileSize = (isTargetFile ? filesystem::getFileSize(iLinkInfo.target.c_str()) : 0);
+  header.IconIndex = (iLinkInfo.customIcon.filename.size() > 0 ? iLinkInfo.customIcon.index : 0);
+  header.ShowCommand = 1;
+  header.HotKey = iLinkInfo.hotKey;
   header.reserved1 = 0;
   header.reserved2 = 0;
 
@@ -1012,25 +992,25 @@ bool createLink(const char * iFilePath, const LinkInfo & iLinkInfo)
     saveString(f, iLinkInfo.target); //basic path
     saveString(f, ""); //final path
 
-    LNK_FLAGS & flags = header.linkFlags;
+    LinkFlags & flags = header.linkFlags;
 
     //Description
-    if (flags.hasDescription)
+    if (flags.HasName)
       saveStringUnicode(f, iLinkInfo.description);
 
     //Relative path string
     //(never)
 
     //Working directory
-    if (flags.hasWorkingDirectory)
+    if (flags.HasWorkingDir)
       saveStringUnicode(f, iLinkInfo.workingDirectory);
 
     //Command line arguments
-    if (flags.hasCommandLineArguments)
+    if (flags.HasArguments)
       saveStringUnicode(f, iLinkInfo.arguments);
 
     //Icon filename
-    if (flags.hasCustomIcon)
+    if (flags.HasIconLocation)
       saveStringUnicode(f, iLinkInfo.customIcon.filename);
     
     //Additonal Info Usualy consists of a dword with the value 0. 
@@ -1093,7 +1073,7 @@ bool printLinkInfo(const char * iFilePath)
     printf("Link file: %s\n", iFilePath);
 
     //read & print header
-    LNK_HEADER header = {0};
+    ShellLinkHeader header = {0};
     fread(&header, 1, sizeof(header), f);
     //signature
     printf("signature: 0x%02x 0x%02x 0x%02x 0x%02x \n", 
@@ -1123,56 +1103,56 @@ bool printLinkInfo(const char * iFilePath)
       header.guid[14],
       header.guid[15]   );
     //link flags
-    printf("link flags: shellItemIdListPresent   =%c\n", (header.linkFlags.shellItemIdListPresent ? 'T' : 'F')  );
-    printf("                targetIsFileOrDirectory  =%c\n", (header.linkFlags.targetIsFileOrDirectory ? 'T' : 'F')  );
-    printf("                hasDescription           =%c\n", (header.linkFlags.hasDescription ? 'T' : 'F')  );
-    printf("                hasRelativePath          =%c\n", (header.linkFlags.hasRelativePath ? 'T' : 'F')  );
-    printf("                hasWorkingDirectory      =%c\n", (header.linkFlags.hasWorkingDirectory ? 'T' : 'F')  );
-    printf("                hasCommandLineArguments  =%c\n", (header.linkFlags.hasCommandLineArguments ? 'T' : 'F')  );
-    printf("                hasCustomIcon            =%c\n", (header.linkFlags.hasCustomIcon ? 'T' : 'F')  );
+    printf("link flags: HasLinkTargetIDList   =%c\n", (header.linkFlags.HasLinkTargetIDList ? 'T' : 'F')  );
+    printf("                HasLinkInfo  =%c\n", (header.linkFlags.HasLinkInfo ? 'T' : 'F')  );
+    printf("                HasName           =%c\n", (header.linkFlags.HasName ? 'T' : 'F')  );
+    printf("                HasRelativePath          =%c\n", (header.linkFlags.HasRelativePath ? 'T' : 'F')  );
+    printf("                HasWorkingDir      =%c\n", (header.linkFlags.HasWorkingDir ? 'T' : 'F')  );
+    printf("                HasArguments  =%c\n", (header.linkFlags.HasArguments ? 'T' : 'F')  );
+    printf("                HasIconLocation            =%c\n", (header.linkFlags.HasIconLocation ? 'T' : 'F')  );
     printf("                reserved1                =%c\n", (header.linkFlags.reserved1 ? 'T' : 'F')  );
     printf("                reserved2                =%02x\n", header.linkFlags.reserved2 );
     printf("                reserved3                =%02x\n", header.linkFlags.reserved3 );
     printf("                reserved4                =%02x\n", header.linkFlags.reserved4 );
     //target flags
-    printf("target flags: isReadOnly                      =%c\n", (header.targetFlags.isReadOnly ? 'T' : 'F')  );
-    printf("              isHidden                        =%c\n", (header.targetFlags.isHidden ? 'T' : 'F')  );
-    printf("              isSystemFile                    =%c\n", (header.targetFlags.isSystemFile ? 'T' : 'F')  );
-    printf("              isVolumeLabel                   =%c\n", (header.targetFlags.isVolumeLabel ? 'T' : 'F')  );
-    printf("              isDirectory                     =%c\n", (header.targetFlags.isDirectory ? 'T' : 'F')  );
-    printf("              hasBeenModifiedSinceLastBackup  =%c\n", (header.targetFlags.hasBeenModifiedSinceLastBackup ? 'T' : 'F')  );
-    printf("              isEncrypted                     =%c\n", (header.targetFlags.isEncrypted ? 'T' : 'F')  );
-    printf("              isNormal                        =%c\n", (header.targetFlags.isNormal ? 'T' : 'F')  );
-    printf("              isTemporary                     =%c\n", (header.targetFlags.isTemporary ? 'T' : 'F')  );
-    printf("              isSparseFile                    =%c\n", (header.targetFlags.isSparseFile ? 'T' : 'F')  );
-    printf("              hasReparsePointData             =%c\n", (header.targetFlags.hasReparsePointData ? 'T' : 'F')  );
-    printf("              isCompressed                    =%c\n", (header.targetFlags.isCompressed ? 'T' : 'F')  );
-    printf("              isOffline                       =%c\n", (header.targetFlags.isOffline ? 'T' : 'F')  );
-    printf("              reserved1                       =%c\n", (header.targetFlags.reserved1 ? 'T' : 'F')  );
-    printf("              reserved2                       =%c\n", (header.targetFlags.reserved2 ? 'T' : 'F')  );
-    printf("              reserved3                       =%c\n", (header.targetFlags.reserved3 ? 'T' : 'F')  );
-    std::string creationTimeStr = toTimeString(header.creationTime);
-    std::string modificationTimeStr = toTimeString(header.modificationTime);
-    std::string lastAccessTimeStr = toTimeString(header.lastAccessTime);
+    printf("target flags: isReadOnly                      =%c\n", (header.FileAttributes.isReadOnly ? 'T' : 'F')  );
+    printf("              isHidden                        =%c\n", (header.FileAttributes.isHidden ? 'T' : 'F')  );
+    printf("              isSystemFile                    =%c\n", (header.FileAttributes.isSystemFile ? 'T' : 'F')  );
+    printf("              isVolumeLabel                   =%c\n", (header.FileAttributes.isVolumeLabel ? 'T' : 'F')  );
+    printf("              isDirectory                     =%c\n", (header.FileAttributes.isDirectory ? 'T' : 'F')  );
+    printf("              hasBeenModifiedSinceLastBackup  =%c\n", (header.FileAttributes.hasBeenModifiedSinceLastBackup ? 'T' : 'F')  );
+    printf("              isEncrypted                     =%c\n", (header.FileAttributes.isEncrypted ? 'T' : 'F')  );
+    printf("              isNormal                        =%c\n", (header.FileAttributes.isNormal ? 'T' : 'F')  );
+    printf("              isTemporary                     =%c\n", (header.FileAttributes.isTemporary ? 'T' : 'F')  );
+    printf("              isSparseFile                    =%c\n", (header.FileAttributes.isSparseFile ? 'T' : 'F')  );
+    printf("              hasReparsePointData             =%c\n", (header.FileAttributes.hasReparsePointData ? 'T' : 'F')  );
+    printf("              isCompressed                    =%c\n", (header.FileAttributes.isCompressed ? 'T' : 'F')  );
+    printf("              isOffline                       =%c\n", (header.FileAttributes.isOffline ? 'T' : 'F')  );
+    printf("              reserved1                       =%c\n", (header.FileAttributes.reserved1 ? 'T' : 'F')  );
+    printf("              reserved2                       =%c\n", (header.FileAttributes.reserved2 ? 'T' : 'F')  );
+    printf("              reserved3                       =%c\n", (header.FileAttributes.reserved3 ? 'T' : 'F')  );
+    std::string creationTimeStr = toTimeString(header.CreationTime);
+    std::string modificationTimeStr = toTimeString(header.WriteTime);
+    std::string lastAccessTimeStr = toTimeString(header.AccessTime);
     const char * test = "test";
     //PRINTF BUG. Unable to display using "0x%08x (%s)"
-    //printf("time stamps:  creationTime      = 0x%08x (%s) \n", header.creationTime, creationTimeStr.c_str());
-    //printf("              modificationTime  = 0x%08x (%s) \n", header.modificationTime, modificationTimeStr.c_str());
-    //printf("              lastAccessTime    = 0x%08x (%s) \n", header.lastAccessTime, lastAccessTimeStr.c_str());
-    printf("time stamps:  creationTime      = 0x%08x ", header.creationTime);       printf("(%s) \n", creationTimeStr.c_str());
-    printf("              modificationTime  = 0x%08x ", header.modificationTime);   printf("(%s) \n", modificationTimeStr.c_str());
-    printf("              lastAccessTime    = 0x%08x ", header.lastAccessTime);     printf("(%s) \n", lastAccessTimeStr.c_str());
+    //printf("time stamps:  CreationTime      = 0x%08x (%s) \n", header.CreationTime, creationTimeStr.c_str());
+    //printf("              WriteTime  = 0x%08x (%s) \n", header.WriteTime, modificationTimeStr.c_str());
+    //printf("              AccessTime    = 0x%08x (%s) \n", header.AccessTime, lastAccessTimeStr.c_str());
+    printf("time stamps:  CreationTime      = 0x%08x ", header.CreationTime);       printf("(%s) \n", creationTimeStr.c_str());
+    printf("              WriteTime  = 0x%08x ", header.WriteTime);   printf("(%s) \n", modificationTimeStr.c_str());
+    printf("              AccessTime    = 0x%08x ", header.AccessTime);     printf("(%s) \n", lastAccessTimeStr.c_str());
     //remaining properties
-    printf("targetFileLength = 0x%04x\n", header.targetFileLength);
-    printf("customIconNumber = 0x%04x\n", header.customIconNumber);
-    printf("showWindowValue = 0x%04x\n", header.showWindowValue);
-    std::string hotKeyDescription = toString(header.hotKey);
-    printf("hotKey    = 0x%04x (%s)\n", header.hotKey, hotKeyDescription.c_str());
+    printf("FileSize = 0x%04x\n", header.FileSize);
+    printf("IconIndex = 0x%04x\n", header.IconIndex);
+    printf("ShowCommand = 0x%04x\n", header.ShowCommand);
+    std::string hotKeyDescription = toString(header.HotKey);
+    printf("HotKey    = 0x%04x (%s)\n", header.HotKey, hotKeyDescription.c_str());
     printf("reserved1 = 0x%04x\n", header.reserved1);
     printf("reserved2 = 0x%04x\n", header.reserved2);
 
     //shellItemIdList
-    if (header.linkFlags.shellItemIdListPresent)
+    if (header.linkFlags.HasLinkTargetIDList)
     {
       unsigned short listSize = 0;
       fread(&listSize, 1, sizeof(listSize), f);
@@ -1276,35 +1256,35 @@ bool printLinkInfo(const char * iFilePath)
     }
 
     //Description
-    if (header.linkFlags.hasDescription)
+    if (header.linkFlags.HasName)
     {
       std::string value = readUnicodeString(f);
       printf("Description = \"%s\" \n", value.c_str() );
     }
 
     //Relative path string
-    if (header.linkFlags.hasRelativePath)
+    if (header.linkFlags.HasRelativePath)
     {
       std::string value = readUnicodeString(f);
       printf("Relative path string = \"%s\" \n", value.c_str() );
     }
 
     //Working directory
-    if (header.linkFlags.hasWorkingDirectory)
+    if (header.linkFlags.HasWorkingDir)
     {
       std::string value = readUnicodeString(f);
       printf("Working directory = \"%s\" \n", value.c_str() );
     }
 
     //Command line arguments
-    if (header.linkFlags.hasCommandLineArguments)
+    if (header.linkFlags.HasArguments)
     {
       std::string value = readUnicodeString(f);
       printf("Command line arguments = \"%s\" \n", value.c_str() );
     }
 
     //Icon filename
-    if (header.linkFlags.hasCustomIcon)
+    if (header.linkFlags.HasIconLocation)
     {
       std::string value = readUnicodeString(f);
       printf("Icon filename = \"%s\" \n", value.c_str() );
