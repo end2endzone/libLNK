@@ -1,3 +1,4 @@
 /src/libLNK_unittest/tests/*.copy.lnk
 /cmake/build
 /third_party
+/docs/~$reverse_engineering.xlsx

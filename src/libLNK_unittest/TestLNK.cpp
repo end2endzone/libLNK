@@ -104,6 +104,51 @@ TEST_F(TestLNK, testCreateSimpleLink)
   }
 }
 
+TEST_F(TestLNK, testCreateCmdExe)
+{
+  //try to match existing cmd.exe shortcut.
+
+  //Build test case link file
+  std::string lnkFilePath = getTestLink();
+
+  //test creation identical
+  lnk::LinkInfo info;
+  info.target = "C:\\WINDOWS\\system32\\cmd.exe";
+  info.arguments = "";
+  info.description = "";
+  info.workingDirectory = "C:\\WINDOWS\\system32";
+  info.customIcon.filename = "C:\\WINDOWS\\system32\\cmd.exe";
+  info.customIcon.index = 0;
+  info.hotKey = lnk::LNK_NO_HOTKEY;
+
+  bool success = createLink(lnkFilePath.c_str(), info);
+  ASSERT_TRUE( success == true );
+
+  //test command
+  std::string command = lnk::getLinkCommand(lnkFilePath.c_str());
+  std::string expectedCommand = info.target;
+  ASSERT_TRUE( command == expectedCommand );
+
+  //test getLinkInfo on a custom (handmade) link
+  {
+    lnk::LinkInfo info;
+    bool success = false;
+    success = lnk::getLinkInfo(lnkFilePath.c_str(), info);
+    ASSERT_TRUE( success == true );
+    ASSERT_TRUE( info.target == "C:\\WINDOWS\\system32\\cmd.exe" );
+    ASSERT_TRUE( info.networkPath == "" );
+    ASSERT_TRUE( info.arguments == "" );
+    ASSERT_TRUE( info.description == "" );
+    ASSERT_TRUE( info.workingDirectory == "C:\\WINDOWS\\system32" );
+    ASSERT_TRUE( info.customIcon.filename == "C:\\WINDOWS\\system32\\cmd.exe" );
+    ASSERT_TRUE( info.customIcon.index == 0 );
+  }
+
+  std::string reason;
+  bool fileAreEquals = hlp.isFileEquals(lnkFilePath.c_str(), "./tests/cmd.exe.lnk", reason);
+  ASSERT_TRUE( fileAreEquals ) << reason.c_str();
+}
+
 TEST_F(TestLNK, testCreateCustomLink)
 {
   //Build test case link file

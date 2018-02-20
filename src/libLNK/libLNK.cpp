@@ -165,14 +165,11 @@ static const unsigned long LNK_NETWORK_VOLUME_TABLE_SIZE = sizeof(LNK_NETWORK_VO
 //itemId structure used in LinkTargetIDList part of a link
 struct LNK_ITEMID
 {
-  unsigned short size;
-  unsigned char signature[6];       
-  unsigned char unknown01;          
-  unsigned char unknown02;          
-  unsigned char unknown03;          
-  unsigned char unknown04;          
-  unsigned char unknown05;          
-  unsigned char unknown06;          
+  uint16_t size;
+  uint8_t type;
+  uint8_t unknown1[5];
+  uint32_t unknown2;
+  uint16_t fileAttributes;
   const char * name83;
   unsigned char unknown07;          
   unsigned char unknown08;          
@@ -222,14 +219,11 @@ std::string toTimeString(const unsigned __int64 & iTime)
 }
 
 static const LNK_HOTKEY LNK_NO_HOTKEY = {LNK_HK_NONE, LNK_HK_MOD_NONE};
-static const LNK_ITEMID         LNK_ITEMIDFolderDefault = { 0,
-                                                          {0x31, 0x00, 0x00, 0x00, 0x00, 0x00},           //always 0x31 0x00 0x00 0x00 0x00 0x00
-                                                          0x3a,                                           //0x3a is a possible value
-                                                          0x3e,                                           //always 0x3e
-                                                          0x0e,                                           //0x0e is a possible value
-                                                          0x6b,                                           //0x6b is a possible value
-                                                          0x10,                                           //always 0x10
-                                                          0x00,                                           //always 0x00
+static const LNK_ITEMID         LNK_ITEMIDFolderDefault = {0x0000,
+                                                          0x31,
+                                                          {0x00, 0x00, 0x00, 0x00, 0x00},                 //always 0x00 0x00 0x00 0x00 0x00
+                                                          0x6B0E3E3A,                                     //0x3a is a possible value, always 0x3e, 0x0e is a possible value, 0x6b is a possible value
+                                                          0x0010,                                         //always 0x0010
                                                           NULL,                                           //name in 8.3 format
                                                           0x00,                                           //always 0x00
                                                           0x28,                                           //0x28 is a possible value
@@ -247,14 +241,11 @@ static const LNK_ITEMID         LNK_ITEMIDFolderDefault = { 0,
                                                           0x18,                                           //0x18 is a possible value or 0x14 is a possible value
                                                           0x00                                            //always 0x00
 };
-static const LNK_ITEMID       LNK_ITEMIDFileDefault = { 0,
-                                                      {0x32, 0x00, 0x00, 0x00, 0x00, 0x00},         //always 0x32 0x00 0x00 0x00 0x00 0x00
-                                                      0x3a,                                         //0x3a is a possible value
-                                                      0x3e,                                         //always 0x3e
-                                                      0x13,                                         //0x13 is a possible value
-                                                      0x6b,                                         //0x6b is a possible value
-                                                      0x20,                                         //always 0x20
-                                                      0x00,                                         //always 0x00
+static const LNK_ITEMID       LNK_ITEMIDFileDefault = {0x0000,
+                                                      0x32,                                         //always 0x32
+                                                      {0x00, 0x00, 0x00, 0x00, 0x00},               //always 0x00 0x00 0x00 0x00 0x00
+                                                      0x6B133E3A,                                   //0x6b is a possible value, 0x13 is a possible value, always 0x3e, 0x3a is a possible value
+                                                      0x0020,                                       //always 0x0020
                                                       NULL,                                         //name in 8.3 format
                                                       0x00,                                         //always 0x00
                                                       0x2c,                                         //0x2c is a possible value
@@ -372,18 +363,14 @@ template <>
 inline bool serialize(const LNK_ITEMID & iValue, MemoryBuffer & ioBuffer)
 {
   serialize(iValue.size, ioBuffer);
-  serialize(iValue.signature[0], ioBuffer);
-  serialize(iValue.signature[1], ioBuffer);
-  serialize(iValue.signature[2], ioBuffer);
-  serialize(iValue.signature[3], ioBuffer);
-  serialize(iValue.signature[4], ioBuffer);
-  serialize(iValue.signature[5], ioBuffer);
-  serialize(iValue.unknown01, ioBuffer);
-  serialize(iValue.unknown02, ioBuffer);
-  serialize(iValue.unknown03, ioBuffer);
-  serialize(iValue.unknown04, ioBuffer);
-  serialize(iValue.unknown05, ioBuffer);
-  serialize(iValue.unknown06, ioBuffer);
+  serialize(iValue.type, ioBuffer);
+  serialize(iValue.unknown1[0], ioBuffer);
+  serialize(iValue.unknown1[1], ioBuffer);
+  serialize(iValue.unknown1[2], ioBuffer);
+  serialize(iValue.unknown1[3], ioBuffer);
+  serialize(iValue.unknown1[4], ioBuffer);
+  serialize(iValue.unknown2, ioBuffer);
+  serialize(iValue.fileAttributes, ioBuffer);
 
   //name83
   {
@@ -459,18 +446,14 @@ bool deserialize(const MemoryBuffer & iBuffer, LNK_ITEMID & oValue, std::string 
   const unsigned char * buffer = iBuffer.getBuffer();
 
   oValue.size = readData<unsigned short>(buffer, offset);
-  oValue.signature[0] = readData<unsigned char>(buffer, offset);
-  oValue.signature[1] = readData<unsigned char>(buffer, offset);
-  oValue.signature[2] = readData<unsigned char>(buffer, offset);
-  oValue.signature[3] = readData<unsigned char>(buffer, offset);
-  oValue.signature[4] = readData<unsigned char>(buffer, offset);
-  oValue.signature[5] = readData<unsigned char>(buffer, offset);
-  oValue.unknown01 = readData<unsigned char>(buffer, offset);
-  oValue.unknown02 = readData<unsigned char>(buffer, offset);
-  oValue.unknown03 = readData<unsigned char>(buffer, offset);
-  oValue.unknown04 = readData<unsigned char>(buffer, offset);
-  oValue.unknown05 = readData<unsigned char>(buffer, offset);
-  oValue.unknown06 = readData<unsigned char>(buffer, offset);
+  oValue.type = readData<unsigned char>(buffer, offset);
+  oValue.unknown1[0] = readData<unsigned char>(buffer, offset);
+  oValue.unknown1[1] = readData<unsigned char>(buffer, offset);
+  oValue.unknown1[2] = readData<unsigned char>(buffer, offset);
+  oValue.unknown1[3] = readData<unsigned char>(buffer, offset);
+  oValue.unknown1[4] = readData<unsigned char>(buffer, offset);
+  oValue.unknown2 = readData<unsigned long>(buffer, offset);
+  oValue.fileAttributes = readData<unsigned short>(buffer, offset);
 
   //name83
   oValue.name83 = NULL;
@@ -603,31 +586,32 @@ bool getLinkInfo(const char * iFilePath, LinkInfo & oLinkInfo)
         //      These items are used to store various informations.
         //      For more info read the SHITEMID documentation. 
         const uint16_t & IDListSize = readData<unsigned short>(content, offset);
-        uint16_t itemIdSize = 0xFFFF;
-        while (itemIdSize != 0)
+        uint16_t ItemIDSize = 0xFFFF;
+        while (ItemIDSize != 0)
         {
-          itemIdSize = readData<unsigned short>(content, offset);
-          if (itemIdSize > 0)
+          ItemIDSize = readData<unsigned short>(content, offset);
+          bool isTerminalID = (ItemIDSize == 0);
+          if (!isTerminalID)
           {
             //item is valid (last item has a size of 0)
 
             //read itemId's content
-            MemoryBuffer itemIdContent;
-            serialize(itemIdSize, itemIdContent);
-            while (itemIdContent.getSize() < itemIdSize)
+            MemoryBuffer ItemID;
+            serialize(ItemIDSize, ItemID);
+            while (ItemID.getSize() < ItemIDSize)
             {
               const unsigned char & c = readData<unsigned char>(content, offset);
-              serialize(c, itemIdContent);
+              serialize(c, ItemID);
             }
 
             //check itemId's content
-            const unsigned char & itemIdType = itemIdContent.getBuffer()[2];
-            switch(itemIdType)
+            const uint8_t & type = ItemID.getBuffer()[2];
+            switch(type)
             {
             case 0x1f: //computer data. ignore
               break;
             case 0x2f: //drive data.
-              oLinkInfo.target = (char*)&itemIdContent.getBuffer()[3];
+              oLinkInfo.target = (char*)&ItemID.getBuffer()[3];
               break;
             case 0x31: //folder data
             case 0x32: //file data
@@ -635,7 +619,7 @@ bool getLinkInfo(const char * iFilePath, LinkInfo & oLinkInfo)
                 std::string name83;
                 std::string nameLong;
                 LNK_ITEMID itemId = {0};
-                bool success = deserialize(itemIdContent, itemId, name83, nameLong);
+                bool success = deserialize(ItemID, itemId, name83, nameLong);
                 assert( success == true );
                 
                 if (oLinkInfo.target.size() == 0)
@@ -770,7 +754,7 @@ MemoryBuffer createShellItemIdList(const char * iFilePath, const LinkInfo & iLin
   //static const unsigned short listSize = sizeof(itemsData);
   static const unsigned char  itemIdComputerData[] = {0x14, 0x00, 0x1f, 0x50, 0xe0, 0x4f, 0xd0, 0x20, 0xea, 0x3a, 0x69, 0x10, 0xa2, 0xd8, 0x08, 0x00, 0x2b, 0x30, 0x30, 0x9d};
   static const unsigned short itemIdComputerSize = sizeof(itemIdComputerData);
-               unsigned char  itemIdDriveData[] = {0x19, 0x00, 0x2f, 'C', 0x3a, 0x5c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+               unsigned char  itemIdDriveData[] = {0x19, 0x00, 0x2f, 'C', ':', '\\', 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
                unsigned short itemIdDriveSize = sizeof(itemIdDriveData);
 
   typedef std::vector<LNK_ITEMID> ITEMIDList;
