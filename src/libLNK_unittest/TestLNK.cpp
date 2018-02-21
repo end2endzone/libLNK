@@ -149,6 +149,27 @@ TEST_F(TestLNK, testCreateCmdExe)
   ASSERT_TRUE( fileAreEquals ) << reason.c_str();
 }
 
+TEST_F(TestLNK, DISABLED_testWinXpNotepadDefault_duplicate)
+{
+  //Build test case link file
+  std::string lnkFilePath = getTestLink();
+
+  //test creation
+  lnk::LinkInfo info;
+  info.target = "C:\\WINDOWS\\system32\\notepad.exe";
+  info.workingDirectory = "C:\\WINDOWS\\system32";
+  info.customIcon.filename = "C:\\WINDOWS\\system32\\notepad.exe";
+  info.customIcon.index = 0;
+  info.hotKey = lnk::LNK_NO_HOTKEY;
+
+  bool success = lnk::createLink(lnkFilePath.c_str(), info);
+  ASSERT_TRUE( success == true );
+
+  std::string reason;
+  bool fileAreEquals = hlp.isFileEquals(lnkFilePath.c_str(), "./tests/testWinXpNotepadDefault.lnk", reason);
+  ASSERT_TRUE( fileAreEquals ) << reason.c_str();
+}
+
 TEST_F(TestLNK, testCreateCustomLink)
 {
   //Build test case link file

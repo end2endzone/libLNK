@@ -8,6 +8,7 @@
 #include "filesystemfunc.h"
 
 #include "MemoryBuffer.h"
+#include "ItemID.h"
 
 namespace lnk
 {
@@ -219,51 +220,6 @@ std::string toTimeString(const unsigned __int64 & iTime)
 }
 
 static const LNK_HOTKEY LNK_NO_HOTKEY = {LNK_HK_NONE, LNK_HK_MOD_NONE};
-static const LNK_ITEMID         LNK_ITEMIDFolderDefault = {0x0000,
-                                                          0x31,
-                                                          {0x00, 0x00, 0x00, 0x00, 0x00},                 //always 0x00 0x00 0x00 0x00 0x00
-                                                          0x6B0E3E3A,                                     //0x3a is a possible value, always 0x3e, 0x0e is a possible value, 0x6b is a possible value
-                                                          0x0010,                                         //always 0x0010
-                                                          NULL,                                           //name in 8.3 format
-                                                          0x00,                                           //always 0x00
-                                                          0x28,                                           //0x28 is a possible value
-                                                          {0x00, 0x03, 0x00, 0x04, 0x00, 0xef, 0xbe},     //always 00 03 00 04 00 ef be
-                                                          0x3a,                                           //always unknown1
-                                                          0x3e,                                           //always unknown2
-                                                          0x0e,                                           //always unknown3
-                                                          0x6b,                                           //always unknown4
-                                                          0x3a,                                           //always unknown1
-                                                          0x3e,                                           //always unknown2
-                                                          0x0e,                                           //always unknown3
-                                                          0x6b,                                           //always unknown4
-                                                          {0x14, 0x00, 0x00, 0x00},                       //always 14 00 00 00
-                                                          NULL,                                           //name in unicode format
-                                                          0x18,                                           //0x18 is a possible value or 0x14 is a possible value
-                                                          0x00                                            //always 0x00
-};
-static const LNK_ITEMID       LNK_ITEMIDFileDefault = {0x0000,
-                                                      0x32,                                         //always 0x32
-                                                      {0x00, 0x00, 0x00, 0x00, 0x00},               //always 0x00 0x00 0x00 0x00 0x00
-                                                      0x6B133E3A,                                   //0x6b is a possible value, 0x13 is a possible value, always 0x3e, 0x3a is a possible value
-                                                      0x0020,                                       //always 0x0020
-                                                      NULL,                                         //name in 8.3 format
-                                                      0x00,                                         //always 0x00
-                                                      0x2c,                                         //0x2c is a possible value
-                                                      {0x00, 0x03, 0x00, 0x04, 0x00, 0xef, 0xbe},   //always 00 03 00 04 00 ef be
-                                                      0x3a,                                         //always unknown1
-                                                      0x3e,                                         //always unknown2
-                                                      0x13,                                         //always unknown3
-                                                      0x6b,                                         //always unknown4
-                                                      0x3a,                                         //always unknown1
-                                                      0x3e,                                         //always unknown2
-                                                      0x13,                                         //always unknown3
-                                                      0x6b,                                         //always unknown4
-                                                      {0x14, 0x00, 0x00, 0x00},                     //always 14 00 00 00
-                                                      NULL,                                         //name in unicode format
-                                                      0x18,                                         //0x18 is a possible value or 0x14 is a possible value
-                                                      0x00                                          //always 0x00
-};
-
 
 template <typename T>
 inline const T & readData(const unsigned char * iBuffer, unsigned long & ioOffset)
@@ -324,120 +280,6 @@ void saveString(FILE * iFile, const std::string & iValue)
 
   static const char NULLCHARACTER = '\0';
   fwrite(&NULLCHARACTER, 1, sizeof(NULLCHARACTER), iFile);
-}
-
-unsigned short getSizeOf(const LNK_ITEMID & iValue)
-{
-  unsigned short size = 0;
-
-  size += sizeof(LNK_ITEMID) - sizeof(iValue.name83) - sizeof(iValue.nameUnicode);
-  std::string shortPath = iValue.name83;
-  std::string longPath = iValue.nameUnicode;
-  size_t name83Length = shortPath.size();
-  size += (unsigned short)name83Length + 1;
-  size_t nameUnicodeLength = longPath.size();
-  size += (unsigned short)(nameUnicodeLength+1)*2;
-
-  return size;
-}
-
-template <typename T>
-inline bool serialize(const T & iValue, MemoryBuffer & ioBuffer)
-{
-  unsigned long dataSize = sizeof(T);
-  unsigned long oldSize = ioBuffer.getSize();
-  unsigned long newSize = oldSize + dataSize;
-  if (ioBuffer.reallocate(newSize))
-  {
-    //save data
-    unsigned char * buffer = ioBuffer.getBuffer();
-    T * offset = (T*)&buffer[oldSize];
-    *offset = iValue;
-
-    return true;
-  }
-  return false;
-}
-
-template <>
-inline bool serialize(const LNK_ITEMID & iValue, MemoryBuffer & ioBuffer)
-{
-  serialize(iValue.size, ioBuffer);
-  serialize(iValue.type, ioBuffer);
-  serialize(iValue.unknown1[0], ioBuffer);
-  serialize(iValue.unknown1[1], ioBuffer);
-  serialize(iValue.unknown1[2], ioBuffer);
-  serialize(iValue.unknown1[3], ioBuffer);
-  serialize(iValue.unknown1[4], ioBuffer);
-  serialize(iValue.unknown2, ioBuffer);
-  serialize(iValue.fileAttributes, ioBuffer);
-
-  //name83
-  {
-    std::string tmp = iValue.name83;
-    for(unsigned long i=0; i<=tmp.size(); i++)
-    {
-      const char & c = iValue.name83[i];
-      serialize(c, ioBuffer);
-    }
-  }
-
-  serialize(iValue.unknown07, ioBuffer);
-  serialize(iValue.unknown08, ioBuffer);
-  serialize(iValue.unknown09[0], ioBuffer);
-  serialize(iValue.unknown09[1], ioBuffer);
-  serialize(iValue.unknown09[2], ioBuffer);
-  serialize(iValue.unknown09[3], ioBuffer);
-  serialize(iValue.unknown09[4], ioBuffer);
-  serialize(iValue.unknown09[5], ioBuffer);
-  serialize(iValue.unknown09[6], ioBuffer);
-  serialize(iValue.unknown10, ioBuffer);
-  serialize(iValue.unknown11, ioBuffer);
-  serialize(iValue.unknown12, ioBuffer);
-  serialize(iValue.unknown13, ioBuffer);
-  serialize(iValue.unknown14, ioBuffer);
-  serialize(iValue.unknown15, ioBuffer);
-  serialize(iValue.unknown16, ioBuffer);
-  serialize(iValue.unknown17, ioBuffer);
-  serialize(iValue.unknown18[0], ioBuffer);
-  serialize(iValue.unknown18[1], ioBuffer);
-  serialize(iValue.unknown18[2], ioBuffer);
-  serialize(iValue.unknown18[3], ioBuffer);
-
-  //nameUnicode
-  {
-    std::string tmp = iValue.nameUnicode;
-    for(unsigned long i=0; i<=tmp.size(); i++)
-    {
-      const char & c = iValue.nameUnicode[i];
-      serialize(c, ioBuffer);
-      serialize('\0', ioBuffer);
-    }
-  }
-
-  serialize(iValue.unknown19, ioBuffer);
-  serialize(iValue.unknown20, ioBuffer);
-
-  return true;
-}
-
-inline bool serialize(const unsigned char * iData, const unsigned long & iSize, MemoryBuffer & ioBuffer)
-{
-  unsigned long oldSize = ioBuffer.getSize();
-  unsigned long newSize = oldSize + iSize;
-  if (ioBuffer.reallocate(newSize))
-  {
-    //save data
-    unsigned char * buffer = ioBuffer.getBuffer();
-    unsigned char * offset = &buffer[oldSize];
-    for(unsigned long i=0; i<iSize; i++)
-    {
-      offset[i] = iData[i];
-    }
-
-    return true;
-  }
-  return false;
 }
 
 bool deserialize(const MemoryBuffer & iBuffer, LNK_ITEMID & oValue, std::string & oName83, std::string & oNameLong)
@@ -746,39 +588,33 @@ bool getLinkInfo(const char * iFilePath, LinkInfo & oLinkInfo)
   return false;
 }
 
-MemoryBuffer createShellItemIdList(const char * iFilePath, const LinkInfo & iLinkInfo)
+MemoryBuffer createLinkTargetIDList(const char * iFilePath, const LinkInfo & iLinkInfo)
 {
-  MemoryBuffer shellIdList;
-
-  //static const unsigned char  itemsData[] = {0x14, 0x00, 0x1f, 0x50, 0xe0, 0x4f, 0xd0, 0x20, 0xea, 0x3a, 0x69, 0x10, 0xa2, 0xd8, 0x08, 0x00, 0x2b, 0x30, 0x30, 0x9d, 0x19, 0x00, 0x2f, 0x43, 0x3a, 0x5c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x4a, 0x00, 0x31, 0x00, 0x00, 0x00, 0x00, 0x00, 0x32, 0x3e, 0xb5, 0x8b, 0x11, 0x00, 0x50, 0x52, 0x4f, 0x47, 0x52, 0x41, 0x7e, 0x31, 0x00, 0x00, 0x32, 0x00, 0x03, 0x00, 0x04, 0x00, 0xef, 0xbe, 0x77, 0x35, 0x5b, 0x38, 0x38, 0x3e, 0x0c, 0x64, 0x14, 0x00, 0x00, 0x00, 0x50, 0x00, 0x72, 0x00, 0x6f, 0x00, 0x67, 0x00, 0x72, 0x00, 0x61, 0x00, 0x6d, 0x00, 0x20, 0x00, 0x46, 0x00, 0x69, 0x00, 0x6c, 0x00, 0x65, 0x00, 0x73, 0x00, 0x00, 0x00, 0x18, 0x00, 0x44, 0x00, 0x31, 0x00, 0x00, 0x00, 0x00, 0x00, 0x57, 0x3a, 0xef, 0x70, 0x10, 0x00, 0x50, 0x44, 0x46, 0x43, 0x52, 0x45, 0x7e, 0x31, 0x00, 0x00, 0x2c, 0x00, 0x03, 0x00, 0x04, 0x00, 0xef, 0xbe, 0x57, 0x3a, 0xe7, 0x70, 0x38, 0x3e, 0x60, 0x64, 0x14, 0x00, 0x00, 0x00, 0x50, 0x00, 0x44, 0x00, 0x46, 0x00, 0x43, 0x00, 0x72, 0x00, 0x65, 0x00, 0x61, 0x00, 0x74, 0x00, 0x6f, 0x00, 0x72, 0x00, 0x00, 0x00, 0x18, 0x00, 0x48, 0x00, 0x32, 0x00, 0xa2, 0x1a, 0x00, 0x00, 0x16, 0x35, 0x6c, 0x6a, 0x20, 0x00, 0x48, 0x69, 0x73, 0x74, 0x6f, 0x72, 0x79, 0x2e, 0x74, 0x78, 0x74, 0x00, 0x2e, 0x00, 0x03, 0x00, 0x04, 0x00, 0xef, 0xbe, 0x57, 0x3a, 0xe7, 0x70, 0x38, 0x3e, 0xc0, 0x64, 0x14, 0x00, 0x00, 0x00, 0x48, 0x00, 0x69, 0x00, 0x73, 0x00, 0x74, 0x00, 0x6f, 0x00, 0x72, 0x00, 0x79, 0x00, 0x2e, 0x00, 0x74, 0x00, 0x78, 0x00, 0x74, 0x00, 0x00, 0x00, 0x1a, 0x00, 0x00, 0x00};
-  //static const unsigned short listSize = sizeof(itemsData);
-  static const unsigned char  itemIdComputerData[] = {0x14, 0x00, 0x1f, 0x50, 0xe0, 0x4f, 0xd0, 0x20, 0xea, 0x3a, 0x69, 0x10, 0xa2, 0xd8, 0x08, 0x00, 0x2b, 0x30, 0x30, 0x9d};
-  static const unsigned short itemIdComputerSize = sizeof(itemIdComputerData);
-               unsigned char  itemIdDriveData[] = {0x19, 0x00, 0x2f, 'C', ':', '\\', 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-               unsigned short itemIdDriveSize = sizeof(itemIdDriveData);
-
-  typedef std::vector<LNK_ITEMID> ITEMIDList;
-
-  static const unsigned char  itemIdFinalData[] = {0x00, 0x00};
-  static const unsigned short itemIdFinalDataSize = sizeof(itemIdFinalData);
+  MemoryBuffer LinkTargetIDList;
 
   //convert the long path name to short path name
   std::string shortPath = filesystem::getShortPathForm(iLinkInfo.target.c_str());
-  const char * shortPathStr = shortPath.c_str();
-  if (shortPath.size() == 0)
-    return shellIdList; //short path not found
+  if (shortPath.empty())
+    return LinkTargetIDList;
+
+  char driveLetter = shortPath[0];
+  driveLetter = toupper(driveLetter);
   
+  ItemIDList itemIDList;
+  itemIDList.push_back( getComputerItemId() );
+  itemIDList.push_back( getDriveItemId(driveLetter) );
+
   //split path
   StringList shortPathParts;
-  filesystem::splitPath(shortPathStr, shortPathParts);
+  filesystem::splitPath(shortPath.c_str(), shortPathParts);
   if (shortPathParts.size() <= 2)
-    return shellIdList; //short path needs at least a drive/folder/filename structure
+    return LinkTargetIDList; //short path needs at least a drive/folder/filename structure
   StringList longPathParts;
   filesystem::splitPath(iLinkInfo.target.c_str(), longPathParts);
   if (longPathParts.size() <= 2)
-    return shellIdList; //short path needs at least a drive/folder/filename structure
+    return LinkTargetIDList; //short path needs at least a drive/folder/filename structure
   if (shortPathParts.size() != longPathParts.size())
-    return shellIdList; //both long and short paths needs to be the same size
+    return LinkTargetIDList; //both long and short paths needs to be the same size
 
   //shortPathParts[0]	C:
   //shortPathParts[1]	PROGRA~1
@@ -790,74 +626,24 @@ MemoryBuffer createShellItemIdList(const char * iFilePath, const LinkInfo & iLin
   //longPathParts[2]	7-Zip
   //longPathParts[3]	History.txt
 
-  //setup drive data
-  std::string & drive = shortPathParts[0]; // C:
-  const char & driveLetter = drive[0];     // C
-  itemIdDriveData[3] = toupper(driveLetter);
-
-  //create data holder for folder & filename ItemId
-  ITEMIDList itemIds;
-
   //setup folder/filename data
-  size_t numParts = shortPathParts.size();
-  for(size_t i=1; i<numParts; i++)
+  size_t numFileSystemObjects = shortPathParts.size();
+  for(size_t i=1; i<numFileSystemObjects; i++)
   {
     std::string & shortItem = shortPathParts[i];
     std::string &  longItem =  longPathParts[i];
-    if (i+1 < numParts)
-    {
-      //this is a folder
-      LNK_ITEMID item = LNK_ITEMIDFolderDefault;
-      item.name83 = shortItem.c_str();
-      item.nameUnicode = longItem.c_str();
+    FILE_ATTRIBUTES attr = ( (i+1<numFileSystemObjects) ? FA_DIRECTORY : FA_NORMAL );
 
-      //save the item
-      itemIds.push_back(item);
-    }
-    else
-    {
-      //this is a folder
-      LNK_ITEMID item = LNK_ITEMIDFileDefault;
-      item.name83 = shortItem.c_str();
-      item.nameUnicode = longItem.c_str();
-
-      //save the item
-      itemIds.push_back(item);
-    }
+    MemoryBuffer ItemID = getFileItemId(shortItem, longItem, attr);
+    itemIDList.push_back( ItemID );
   }
 
-  //validation
-  size_t numItemIdsFound = itemIds.size();
-  if (numItemIdsFound == 0)
-    return shellIdList; //no folder ItemIds found
-  for(size_t i=0; i<numItemIdsFound; i++)
-  {
-    const LNK_ITEMID & itemId = itemIds[i];
-    if (itemId.name83 == NULL || itemId.nameUnicode == NULL)
-      return shellIdList; //folder ItemId names are not found
-  }
+  //add TerminalID
+  itemIDList.push_back( getTerminalItemId() );
 
-  //compute LinkTargetIDList's size
-  unsigned short shellIdListSize = 0;
+  LinkTargetIDList = getLinkTargetIDList(itemIDList);
 
-  //building LinkTargetIDList
-  serialize(shellIdListSize, shellIdList);
-  serialize(itemIdComputerData, itemIdComputerSize, shellIdList); //size of itemId is part of the data
-  serialize(itemIdDriveData, itemIdDriveSize, shellIdList); //size of itemId is part of the data
-  for(unsigned long i=0; i<numItemIdsFound; i++)
-  {
-    const LNK_ITEMID & itemId = itemIds[i];
-    LNK_ITEMID copy = itemId;
-    copy.size = getSizeOf(copy);
-    serialize(copy, shellIdList);
-  }
-  serialize(itemIdFinalData, itemIdFinalDataSize, shellIdList); //final data is not preceded by a length
-
-  //update LinkTargetIDList's size
-  shellIdListSize = (unsigned short)shellIdList.getSize() - sizeof(shellIdListSize); //size does not include itself
-  (*(unsigned short*)shellIdList.getBuffer()) = shellIdListSize;
-
-  return shellIdList;
+  return LinkTargetIDList;
 }
 
 bool createLink(const char * iFilePath, const LinkInfo & iLinkInfo)
@@ -920,7 +706,7 @@ bool createLink(const char * iFilePath, const LinkInfo & iLinkInfo)
   header.Reserved3 = 0;
 
   //LinkTargetIDList
-  MemoryBuffer LinkTargetIDList = createShellItemIdList(iFilePath, iLinkInfo);
+  MemoryBuffer LinkTargetIDList = createLinkTargetIDList(iFilePath, iLinkInfo);
   if (LinkTargetIDList.getSize() == 0)
     return false; //unable to build LinkTargetIDList
 
