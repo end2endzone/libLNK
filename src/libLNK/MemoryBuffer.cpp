@@ -22,12 +22,11 @@ namespace lnk
     allocate(iSize);
   }
 
-  MemoryBuffer::MemoryBuffer(const MemoryBuffer & arg) : 
+  MemoryBuffer::MemoryBuffer(const MemoryBuffer & iValue) : 
   mBuffer(NULL),
   mSize(0)
   {
-    if (allocate(arg.mSize))
-      memcpy(mBuffer, arg.mBuffer, mSize);
+    (*this) = iValue;
   }
 
   MemoryBuffer::~MemoryBuffer(void)
@@ -114,6 +113,13 @@ namespace lnk
       fclose(f);
     }
     return false;
+  }
+
+  const MemoryBuffer & MemoryBuffer::operator = (const MemoryBuffer & iValue)
+  {
+    if (allocate(iValue.mSize))
+      memcpy(mBuffer, iValue.mBuffer, mSize);
+    return (*this);
   }
 
 }; //lnk
