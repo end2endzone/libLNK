@@ -172,21 +172,78 @@ namespace stringfunc
 
 }; //stringfunc
 
+std::string& operator<<(std::string& str, const void * value)
+{
+  char buffer[1024];
+  if (sizeof(void*) == 4)
+    sprintf(buffer, "0x%08X", value);
+  else if (sizeof(void*) == 8)
+    sprintf(buffer, "0x%016X", value);
+  str.append(buffer);
+  return str;
+}
+
 std::string& operator<<(std::string& str, const std::string & value)
 {
   str.append(value);
   return str;
 }
 
-std::string& operator<<(std::string& str, const int & value)
+std::string& operator<<(std::string& str, const char * value)
 {
-  char buffer[1024];
-  sprintf(buffer, "%d", value);
-  str.append(buffer);
+  str.append(value);
   return str;
 }
 
-std::string& operator<<(std::string& str, const size_t & value)
+std::string& operator<<(std::string& str, const int16_t & value)
+{
+  std::stringstream out;
+  out << value;
+  str.append( out.str() );
+  return str;
+}
+
+std::string& operator<<(std::string& str, const uint16_t & value)
+{
+  std::stringstream out;
+  out << value;
+  str.append( out.str() );
+  return str;
+}
+
+std::string& operator<<(std::string& str, const int8_t & value)
+{
+  std::stringstream out;
+  out << (int16_t)value;
+  str.append( out.str() );
+  return str;
+}
+
+std::string& operator<<(std::string& str, const uint8_t & value)
+{
+  std::stringstream out;
+  out << (uint16_t)value;
+  str.append( out.str() );
+  return str;
+}
+
+std::string& operator<<(std::string& str, const int32_t & value)
+{
+  std::stringstream out;
+  out << value;
+  str.append( out.str() );
+  return str;
+}
+
+std::string& operator<<(std::string& str, const uint32_t & value)
+{
+  std::stringstream out;
+  out << value;
+  str.append( out.str() );
+  return str;
+}
+
+std::string& operator<<(std::string& str, const int64_t & value)
 {
   std::stringstream out;
   out << value;
