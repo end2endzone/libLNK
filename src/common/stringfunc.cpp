@@ -93,15 +93,34 @@ namespace stringfunc
 
   bool isNumeric(const char * iValue)
   {
-    int intValue = atoi(iValue);
-  
-    //try to convert the int value back to string and check for equality.
-    static const int BUFFER_SIZE = 1024;
-    char buffer[BUFFER_SIZE];
-    _itoa(intValue, buffer, 10);
-    if (std::string(buffer) == iValue)
-      return true;
-    return false;
+    if (iValue == NULL)
+      return false;
+
+    bool foundDot = false;
+    size_t length = strlen(iValue);
+    for(size_t offset = 0; offset < length; offset++)
+    {
+      const char & c = iValue[offset];
+      if (c >= '0' && c <= '9')
+        continue; //valid
+      if (c == '.' && !foundDot)
+      {
+        //only 1 dot character must be found in the string
+        foundDot = true;
+        continue; //valid
+      }
+      if ((c == '+' || c == '-'))
+      {
+        if (offset == 0)
+        {
+          //+ or - sign are accepted but must be the first character of the value
+          continue; //valid
+        }
+      }
+
+      return false; //invalid
+    }
+    return true;
   }
 
   int strReplace(std::string & iString, const char * iOldValue, const char * iNewValue)

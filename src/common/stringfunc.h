@@ -1,4 +1,5 @@
-#pragma once
+#ifndef STRINGFUNC_H
+#define STRINGFUNC_H
 
 #include <stdint.h>
 #include <string>
@@ -9,6 +10,8 @@ namespace stringfunc
 
   ///<summary>
   ///Defines if a string value is a numeric value.
+  ///A numeric value can be positive or negative.
+  ///A numeric value can be an integer or a floating point value.
   ///</summary>
   ///<return>True when iValue is numeric. False otherwise.<return>
   bool isNumeric(const char * iValue);
@@ -133,3 +136,5 @@ std::string& operator<<(std::string& str, const int64_t & value);
 ///<param name="value">The value to append to the given string.</param>
 ///<return>Returns the given string.<return>
 std::string& operator<<(std::string& str, const uint64_t & value);
+
+#endif //STRINGFUNC_H
