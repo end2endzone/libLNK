@@ -9,15 +9,17 @@ link_directories(${CMAKE_SOURCE_DIR}/../third_party/googletest/msvc2010)
 add_executable(libLNK_unittest
   gtesthelper.cpp
   gtesthelper.h
+  main.cpp
   TestLNK.cpp
   TestLNK.h
-  TestStringFunc.cpp
-  TestStringFunc.h
   TestEnvironmentFunc.cpp
   TestEnvironmentFunc.h
   TestFilesystemFunc.cpp
   TestFilesystemFunc.h
-  main.cpp
+  TestNativeFunc.cpp
+  TestNativeFunc.h
+  TestStringFunc.cpp
+  TestStringFunc.h
 )
 
 #Copy test files in project directory to be able to run tests from Visual Studio
